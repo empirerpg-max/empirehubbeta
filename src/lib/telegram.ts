@@ -39,6 +39,8 @@ export function useTelegramUser(): { user: TgUser | null; ready: boolean } {
 
     // 2) Telegram WebApp real
     const tg = window.Telegram?.WebApp;
+    console.log("Telegram WebApp object:", tg);
+    
     if (tg) {
       try {
         tg.ready();
@@ -48,11 +50,14 @@ export function useTelegramUser(): { user: TgUser | null; ready: boolean } {
       } catch (err) {
         console.error("Telegram WebApp init failed:", err);
       }
+      
       const u = tg.initDataUnsafe?.user;
+      console.log("Telegram user data:", u);
+      
       if (u) {
         setUser({
           id: String(u.id),
-          name: u.first_name || u.username,
+          name: u.first_name || u.username || "Usuario",
           isTest: false,
         });
         setReady(true);
@@ -60,8 +65,9 @@ export function useTelegramUser(): { user: TgUser | null; ready: boolean } {
       }
     }
 
-    // 3) Sem Telegram nem ?tg_id — fallback: deixa null e marca ready
-    setUser(null);
+    // 3) Fallback para desenvolvimento local ou fora do Telegram
+    console.warn("Nenhum usuário do Telegram detectado. Usando fallback.");
+    setUser({ id: "anon_guest", name: "Guest", isTest: true });
     setReady(true);
   }, []);
 
