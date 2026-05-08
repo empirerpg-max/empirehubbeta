@@ -17,6 +17,7 @@ import {
   Swords,
   Megaphone,
   HelpCircle,
+  Gamepad2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTelegramUser } from "@/lib/telegram";
@@ -95,6 +96,7 @@ function Index() {
         <ShortcutTile to="/gravadoras" label="Gravadoras" icon={<Building2 className="size-5" />} />
         <ShortcutTile to="/radar" label="Acontecendo" icon={<Radio className="size-5" />} />
         <ShortcutTile to="/hall" label="Hall da Fama" icon={<Star className="size-5" />} />
+        <ShortcutTile to="/games" label="Games" icon={<Gamepad2 className="size-5" />} />
         <ShortcutTile to="/duelo" label="Duelo" icon={<Swords className="size-5" />} />
         <ShortcutTile to="/bet" label="Empire Bets" icon={<Dice5 className="size-5" />} />
         <ShortcutTile to="/leiloes" label="Leilões" icon={<Gavel className="size-5" />} />
