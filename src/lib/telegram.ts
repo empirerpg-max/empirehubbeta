@@ -63,29 +63,36 @@ export function useTelegramUser(): { user: TgUser | null; ready: boolean } {
     // 2) Tentar Telegram WebApp SDK ou Hash (comum em web.telegram.org)
     const tg = window.Telegram?.WebApp;
     let sdkUser = tg?.initDataUnsafe?.user;
+    let rawInitData = tg?.initData;
 
-    // Se o SDK não entregou o usuário, tentamos parsear o hash manualmente (comum no PC)
+    // Função auxiliar para tentar pegar usuario de uma string de initData
+    const userFromInitData = (str: string) => {
+      try {
+        const p = new URLSearchParams(str);
+        const u = p.get("user");
+        if (u) return JSON.parse(u);
+      } catch (e) { return null; }
+    };
+
+    // Se o SDK não entregou o usuário, tentamos parsear a URL manualmente
     if (!sdkUser) {
-      const hash = window.location.hash.slice(1);
+      const searchParams = new URLSearchParams(window.location.search);
+      const hash = window.location.hash.includes("?") 
+        ? window.location.hash.split("?")[1] 
+        : window.location.hash.slice(1);
       const hashParams = new URLSearchParams(hash);
-      const webAppDataStr = hashParams.get("tgWebAppData");
+      
+      const webAppDataStr = hashParams.get("tgWebAppData") || searchParams.get("tgWebAppData") || searchParams.get("initData");
+      
       if (webAppDataStr) {
-        const dataParams = new URLSearchParams(webAppDataStr);
-        const userJson = dataParams.get("user");
-        if (userJson) {
-          try {
-            sdkUser = JSON.parse(userJson);
-            console.log("Usuário detectado via Hash manual (PC):", sdkUser?.id);
-          } catch (e) {
-            console.error("Erro ao parsear usuário do hash:", e);
-          }
-        }
+        rawInitData = webAppDataStr;
+        sdkUser = userFromInitData(webAppDataStr);
+        if (sdkUser) console.log("Usuário detectado manual via URL:", sdkUser.id);
       }
     }
 
     if (sdkUser) {
       if (tg) tg.ready();
-      console.log("Usuário detectado via SDK/Hash:", sdkUser.id);
       const newUser = {
         id: String(sdkUser.id),
         name: sdkUser.first_name || sdkUser.username || "Usuário",
@@ -96,8 +103,6 @@ export function useTelegramUser(): { user: TgUser | null; ready: boolean } {
       if (tg) tg.expand();
       setReady(true);
       return;
-    } else {
-      console.log("SDK/Hash sem dados de usuário.");
     }
 
     // 3) Tentar recuperar do localStorage (persitência entre páginas)

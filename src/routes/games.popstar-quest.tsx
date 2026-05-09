@@ -147,7 +147,8 @@ function PopStarQuest() {
               fortuna_bens: 0,
               vendas_total: 0,
               seguidores: 1000,
-              prestigio: 10
+              prestigio: 10,
+              fadiga: 0
             },
             { 
               nome: "Pop Queen", 
@@ -160,7 +161,8 @@ function PopStarQuest() {
               fortuna_bens: 0,
               vendas_total: 0,
               seguidores: 5000,
-              prestigio: 20
+              prestigio: 20,
+              fadiga: 0
             }
           ];
           setArtists(defaults);
@@ -305,10 +307,16 @@ function PopStarQuest() {
   };
 
   const gameLoop = () => {
-    update();
-    draw();
-    if (stateRef.current === GameState.PLAYING) {
-      gameRef.current.loop = requestAnimationFrame(gameLoop);
+    try {
+      update();
+      draw();
+      if (stateRef.current === GameState.PLAYING) {
+        gameRef.current.loop = requestAnimationFrame(gameLoop);
+      }
+    } catch (err) {
+      console.error("ERRO NO LOOP DO JOGO:", err);
+      stateRef.current = GameState.GAME_OVER;
+      setGameState(GameState.GAME_OVER);
     }
   };
 

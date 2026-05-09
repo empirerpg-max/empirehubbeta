@@ -15,6 +15,8 @@ export interface Artist {
   fortuna_total: number;
   prestigio: number;
   fadiga: number;
+  seguidores: number;
+  vendas_total: number;
   telegram_id?: string;
   tour_info?: unknown;
 }
