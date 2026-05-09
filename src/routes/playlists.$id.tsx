@@ -20,7 +20,7 @@ function PlaylistView() {
 
   async function excluir() {
     if (!confirm("Excluir essa playlist?")) return;
-    const r: any = await api.excluirPlaylist(id, user?.id);
+    const r = (await api.excluirPlaylist(id, user?.id)) as string;
     const { ok } = notify(r, { successFallback: "Playlist excluída." });
     if (ok) navigate({ to: "/playlists" });
   }

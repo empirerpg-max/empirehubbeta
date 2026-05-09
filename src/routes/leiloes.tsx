@@ -12,7 +12,7 @@ export const Route = createFileRoute("/leiloes")({
 
 function LeiloesPage() {
   const { user } = useTelegramUser();
-  const [items, setItems] = useState<any[] | null>(null);
+  const [items, setItems] = useState<unknown[] | null>(null);
   const [meusArtistas, setMeusArtistas] = useState<string[]>([]);
   const [bidding, setBidding] = useState<string | null>(null);
 
@@ -29,7 +29,7 @@ function LeiloesPage() {
     api.meusArtistas(user.id).then((l) => setMeusArtistas(l.map((a) => a.nome)));
   }, [user]);
 
-  async function bid(item: any) {
+  async function bid(item: Record<string, unknown>) {
     if (!meusArtistas.length) {
       notify("⚠️ Você precisa ter um artista vinculado.");
       return;
@@ -42,7 +42,7 @@ function LeiloesPage() {
     );
     if (!valor) return;
     setBidding(String(item.id));
-    const r: any = await api.darLance({ nome, itemId: item.id, valor });
+    const r = (await api.darLance({ nome, itemId: String(item.id), valor })) as string;
     notify(r, { successFallback: "Lance dado!" });
     setBidding(null);
     load();
@@ -68,7 +68,7 @@ function LeiloesPage() {
         <p className="text-sm text-muted-foreground">Nenhum leilão ativo no momento.</p>
       )}
       <ul className="space-y-3">
-        {items?.map((it: any, i: number) => (
+        {items?.map((it: Record<string, unknown>, i: number) => (
           <li key={i} className="p-4 rounded-xl bg-card border border-border">
             <p className="font-bold text-sm">{it.descricao || it.titulo}</p>
             <p className="text-xs text-muted-foreground mt-1">Vendedor: {it.vendedor}</p>

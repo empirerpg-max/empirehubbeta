@@ -19,7 +19,7 @@ interface BetMusic {
 
 function BetPage() {
   const { user, ready } = useTelegramUser();
-  const [artists, setArtists] = useState<Record<string, any>[]>([]);
+  const [artists, setArtists] = useState<Record<string, unknown>[]>([]);
   const [betData, setBetData] = useState<{
     semana: string;
     musicas: BetMusic[];
