@@ -17,8 +17,12 @@ async function startServer() {
     res.setHeader("Access-Control-Allow-Headers", "*");
     
     // allow framing by Telegram and the AI Studio environment
-    res.setHeader("Content-Security-Policy", "frame-ancestors 'self' https://web.telegram.org https://t.me https://*.telegram.org https://*.google.com https://*.run.app");
+    res.setHeader(
+      "Content-Security-Policy",
+      "frame-ancestors 'self' * https://web.telegram.org https://t.me https://*.telegram.org https://*.google.com https://*.run.app https://*.googleusercontent.com",
+    );
     res.removeHeader("X-Frame-Options");
+    res.setHeader("X-Frame-Options", "ALLOWALL"); // Fallback non-standard header
 
     if (req.method === "OPTIONS") {
       res.sendStatus(200);
@@ -34,12 +38,24 @@ async function startServer() {
       appType: "spa",
     });
     app.use(vite.middlewares);
-  } else if (process.env.NODE_ENV === "production") {
+  } else {
     // Production: serve static files from dist
     const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("/*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
+    
+    // Serve static assets first
+    app.use(express.static(distPath, { 
+      index: false,
+      redirect: false 
+    }));
+
+    // Fallback all routes to index.html for SPA
+    app.get("*all", (req, res) => {
+      res.sendFile(path.join(distPath, "index.html"), (err) => {
+        if (err) {
+          console.error("Error sending index.html:", err);
+          res.status(500).send("Server Error");
+        }
+      });
     });
   }
 
