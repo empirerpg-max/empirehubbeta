@@ -16,10 +16,9 @@ async function startServer() {
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "*");
     
-    // allow framing by Telegram and anyone else
-    res.setHeader("Content-Security-Policy", "frame-ancestors *");
+    // allow framing by Telegram and the AI Studio environment
+    res.setHeader("Content-Security-Policy", "frame-ancestors 'self' https://web.telegram.org https://t.me https://*.telegram.org https://*.google.com https://*.run.app");
     res.removeHeader("X-Frame-Options");
-    res.setHeader("X-Frame-Options", "ALLOWALL");
 
     if (req.method === "OPTIONS") {
       res.sendStatus(200);
@@ -39,7 +38,7 @@ async function startServer() {
     // Production: serve static files from dist
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
-    app.get("*all", (req, res) => {
+    app.get("/*", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
