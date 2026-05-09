@@ -28,46 +28,57 @@ export function useTelegramUser(): { user: TgUser | null; ready: boolean } {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    // 1) Modo de teste via querystring
+    // 1) Procure por IDs comuns na URL (id, tg_id, user_id, uid, telegram_id)
     const params = new URLSearchParams(window.location.search);
-    const testId = params.get("tg_id");
-    if (testId) {
-      setUser({ id: testId, name: "Teste", isTest: true });
+    const urlId = params.get("id") || params.get("tg_id") || params.get("user_id") || params.get("uid") || params.get("telegram_id");
+    const nameFromUrl = params.get("name") || params.get("username") || params.get("first_name");
+
+    if (urlId) {
+      console.log("Usuário detectado via URL:", urlId);
+      const newUser = { id: urlId, name: nameFromUrl || "Usuário", isTest: urlId.startsWith("test") };
+      setUser(newUser);
+      localStorage.setItem("tg_user_cache", JSON.stringify(newUser));
       setReady(true);
       return;
     }
 
-    // 2) Telegram WebApp real
+    // 2) Tentar Telegram WebApp SDK
     const tg = window.Telegram?.WebApp;
-    console.log("Telegram WebApp object:", tg);
-    
     if (tg) {
-      try {
+      const u = tg.initDataUnsafe?.user;
+      if (u) {
+        console.log("Usuário detectado via SDK:", u.id);
+        const newUser = {
+          id: String(u.id),
+          name: u.first_name || u.username || "Usuário",
+          isTest: false,
+        };
+        setUser(newUser);
+        localStorage.setItem("tg_user_cache", JSON.stringify(newUser));
         tg.ready();
         tg.expand();
-        tg.setHeaderColor?.("#000000");
-        tg.setBackgroundColor?.("#0a0a0a");
-      } catch (err) {
-        console.error("Telegram WebApp init failed:", err);
-      }
-      
-      const u = tg.initDataUnsafe?.user;
-      console.log("Telegram user data:", u);
-      
-      if (u) {
-        setUser({
-          id: String(u.id),
-          name: u.first_name || u.username || "Usuario",
-          isTest: false,
-        });
         setReady(true);
         return;
       }
     }
 
-    // 3) Fallback para desenvolvimento local ou fora do Telegram
-    console.warn("Nenhum usuário do Telegram detectado. Usando fallback.");
-    setUser({ id: "anon_guest", name: "Guest", isTest: true });
+    // 3) Tentar recuperar do localStorage (persitência entre páginas)
+    const cached = localStorage.getItem("tg_user_cache");
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        console.log("Usuário recuperado do cache:", parsed.id);
+        setUser(parsed);
+        setReady(true);
+        return;
+      } catch (e) {
+        console.error("Erro ao ler cache de usuário:", e);
+      }
+    }
+
+    // 4) Fallback final
+    console.warn("Nenhum ID detectado. Usando Guest.");
+    setUser({ id: "guest", name: "Guest", isTest: true });
     setReady(true);
   }, []);
 

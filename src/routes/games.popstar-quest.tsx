@@ -575,7 +575,12 @@ function PopStarQuest() {
   if (gameState === GameState.SELECT_ARTIST) {
     return (
       <main className="flex-1 p-6 bg-[#111] text-white">
-        <h1 className="font-arcade text-lg mb-8 text-center text-primary">SELECT YOUR STAR</h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="font-arcade text-lg text-primary">SELECT YOUR STAR</h1>
+          <div className="px-2 py-1 rounded-md bg-white/5 border border-white/10 text-[8px] font-mono opacity-50">
+            ID: {user?.id}
+          </div>
+        </div>
         <div className="grid grid-cols-2 gap-4">
           {artists.map(a => (
             <button

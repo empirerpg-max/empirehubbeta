@@ -1,11 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChevronLeft, Gamepad2, Play, Star, Trophy } from "lucide-react";
+import { useTelegramUser } from "@/lib/telegram";
 
 export const Route = createFileRoute("/games")({
   component: GamesHub,
 });
 
 function GamesHub() {
+  const { user } = useTelegramUser();
   const games = [
     {
       id: "popstar-quest",
@@ -38,6 +40,14 @@ function GamesHub() {
           Jogue e ganhe moedas para sua carreira.
         </p>
       </header>
+
+      {/* ID Status Badge */}
+      <div className="mb-6 flex justify-center">
+        <div className={`px-4 py-2 rounded-xl text-xs font-bold border flex items-center gap-2 ${user?.id === "guest" ? "bg-red-500/10 border-red-500/30 text-red-500" : "bg-primary/10 border-primary/30 text-primary"}`}>
+          <div className={`size-2 rounded-full animate-pulse ${user?.id === "guest" ? "bg-red-500" : "bg-primary"}`} />
+          ID do Telegram: <span className="font-mono tracking-wider">{user?.id}</span>
+        </div>
+      </div>
 
       <div className="grid gap-6">
         {games.map((game) => (
