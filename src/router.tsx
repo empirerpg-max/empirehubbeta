@@ -60,7 +60,6 @@ export const getRouter = () => {
   const router = createRouter({
     routeTree,
     history: hashHistory,
-    basepath: import.meta.env.BASE_URL,
     context: {},
     scrollRestoration: true,
     defaultPreloadStaleTime: 0,
