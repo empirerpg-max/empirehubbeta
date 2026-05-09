@@ -19,6 +19,10 @@ export default defineConfig(({ mode }) => {
     server: {
       host: "0.0.0.0",
       port: 3000,
+      cors: true,
+      headers: {
+        "Content-Security-Policy": "frame-ancestors 'self' https://web.telegram.org https://t.me",
+      },
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== "true",
@@ -26,6 +30,10 @@ export default defineConfig(({ mode }) => {
     preview: {
       host: "0.0.0.0",
       port: 3000,
+      cors: true,
+      headers: {
+        "Content-Security-Policy": "frame-ancestors 'self' https://web.telegram.org https://t.me",
+      },
     },
   };
 });

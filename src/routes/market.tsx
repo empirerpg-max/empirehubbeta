@@ -300,13 +300,15 @@ function BuyModal({
   async function go() {
     if (!nome) return;
     setSubmitting(true);
-    const r = (buying.kind === "market"
-      ? await api.comprarMarket({
-          nome,
-          categoria: buying.item.categoria,
-          item: buying.item.item,
-        })
-      : await api.comprarMural({ nome, id: buying.item.id })) as string;
+    const r = (
+      buying.kind === "market"
+        ? await api.comprarMarket({
+            nome,
+            categoria: buying.item.categoria,
+            item: buying.item.item,
+          })
+        : await api.comprarMural({ nome, id: buying.item.id })
+    ) as string;
     const { ok } = notify(r, { successFallback: "Compra confirmada!" });
     setSubmitting(false);
     if (ok) onSuccess();
