@@ -13,7 +13,8 @@ function GamesHub() {
       id: "popstar-quest",
       title: "Pop Star Quest",
       description: "Suba do Bubbling Under ao Hot 100 nesta aventura de plataforma!",
-      image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=400&h=250&auto=format&fit=crop",
+      image:
+        "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=400&h=250&auto=format&fit=crop",
       tag: "Novo",
       difficulty: "Médio",
       points: "Até 5.000 EC",
@@ -22,10 +23,7 @@ function GamesHub() {
 
   return (
     <main className="flex-1 mx-auto w-full max-w-2xl px-4 pt-6 pb-20">
-      <Link
-        to="/"
-        className="inline-flex items-center gap-1 text-muted-foreground mb-4"
-      >
+      <Link to="/" className="inline-flex items-center gap-1 text-muted-foreground mb-4">
         <ChevronLeft className="size-4" /> Voltar
       </Link>
 
@@ -33,26 +31,28 @@ function GamesHub() {
         <div className="size-12 rounded-xl bg-primary/10 text-primary grid place-items-center mb-4">
           <Gamepad2 className="size-6" />
         </div>
-        <h1 className="text-3xl font-black italic uppercase tracking-tighter">
-          Games Empire
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          Jogue e ganhe moedas para sua carreira.
-        </p>
+        <h1 className="text-3xl font-black italic uppercase tracking-tighter">Games Empire</h1>
+        <p className="text-muted-foreground mt-2">Jogue e ganhe moedas para sua carreira.</p>
       </header>
 
       {/* Guest Warning */}
       {user?.id === "guest" && (
         <section className="mb-8 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs leading-relaxed">
           <p className="font-bold mb-1">Acesso via Telegram Web (PC)</p>
-          Detectamos que você está usando a versão web do Telegram no computador. Às vezes ela não fornece sua identidade automaticamente. Se encontrar problemas, tente abrir o link direto do bot ou use o celular.
+          Detectamos que você está usando a versão web do Telegram no computador. Às vezes ela não
+          fornece sua identidade automaticamente. Se encontrar problemas, tente abrir o link direto
+          do bot ou use o celular.
         </section>
       )}
 
       {/* ID Status Badge */}
       <div className="mb-6 flex justify-center">
-        <div className={`px-4 py-2 rounded-xl text-xs font-bold border flex items-center gap-2 ${user?.id === "guest" ? "bg-red-500/10 border-red-500/30 text-red-500" : "bg-primary/10 border-primary/30 text-primary"}`}>
-          <div className={`size-2 rounded-full animate-pulse ${user?.id === "guest" ? "bg-red-500" : "bg-primary"}`} />
+        <div
+          className={`px-4 py-2 rounded-xl text-xs font-bold border flex items-center gap-2 ${user?.id === "guest" ? "bg-red-500/10 border-red-500/30 text-red-500" : "bg-primary/10 border-primary/30 text-primary"}`}
+        >
+          <div
+            className={`size-2 rounded-full animate-pulse ${user?.id === "guest" ? "bg-red-500" : "bg-primary"}`}
+          />
           ID do Telegram: <span className="font-mono tracking-wider">{user?.id}</span>
         </div>
       </div>
@@ -78,12 +78,8 @@ function GamesHub() {
             <div className="p-6">
               <div className="flex items-start justify-between mb-2">
                 <div>
-                  <h2 className="text-2xl font-black italic uppercase">
-                    {game.title}
-                  </h2>
-                  <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-                    {game.description}
-                  </p>
+                  <h2 className="text-2xl font-black italic uppercase">{game.title}</h2>
+                  <p className="text-sm text-muted-foreground mt-1 max-w-sm">{game.description}</p>
                 </div>
               </div>
 

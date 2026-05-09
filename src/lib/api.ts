@@ -247,7 +247,11 @@ export const api = {
     invalidateCache();
     return call<CommonResponse>({ acao: "rescisao", ...p });
   },
-  async venderComposicao(p: { nome: string; titulo: string; preco: number }): Promise<CommonResponse> {
+  async venderComposicao(p: {
+    nome: string;
+    titulo: string;
+    preco: number;
+  }): Promise<CommonResponse> {
     invalidateCache();
     return call<CommonResponse>({ acao: "vender_composicao", ...p });
   },
@@ -304,12 +308,18 @@ export const api = {
     return call<CommonResponse>({ acao: "lancar_album", payload: JSON.stringify(payload) });
   },
   async getAlbum(id: string): Promise<AlbumPayload | null> {
-    const r = await call<AlbumPayload & { error?: string }>({ acao: "get_album", id }, { cache: true });
+    const r = await call<AlbumPayload & { error?: string }>(
+      { acao: "get_album", id },
+      { cache: true },
+    );
     if (!r || r.error) return null;
     return r;
   },
   async listarAlbuns(nome?: string): Promise<AlbumPayload[]> {
-    const r = await call<AlbumPayload[]>({ acao: "listar_albuns", nome: nome || "" }, { cache: true });
+    const r = await call<AlbumPayload[]>(
+      { acao: "listar_albuns", nome: nome || "" },
+      { cache: true },
+    );
     return Array.isArray(r) ? r : [];
   },
   async editarAlbum(payload: AlbumPayload): Promise<CommonResponse> {
@@ -330,7 +340,10 @@ export const api = {
     return Array.isArray(r) ? r : [];
   },
   async getPlaylist(id: string): Promise<PlaylistPayload | null> {
-    const r = await call<PlaylistPayload & { error?: string }>({ acao: "get_playlist", id }, { cache: true });
+    const r = await call<PlaylistPayload & { error?: string }>(
+      { acao: "get_playlist", id },
+      { cache: true },
+    );
     if (!r || r.error) return null;
     return r;
   },
@@ -345,7 +358,10 @@ export const api = {
 
   // ---- Duelo & Bet (Simulação — requer endpoints backend) ----
   async getMusicasBet(): Promise<{ semana: string; musicas: unknown[] } | null> {
-    const r = await call<{ semana: string; musicas: unknown[]; erro?: string }>({ acao: "get_musicas_bet" }, { cache: true });
+    const r = await call<{ semana: string; musicas: unknown[]; erro?: string }>(
+      { acao: "get_musicas_bet" },
+      { cache: true },
+    );
     if (!r || r.erro) return null;
     return r;
   },

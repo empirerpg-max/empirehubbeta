@@ -47,11 +47,7 @@ function AlbumEditor() {
       }
 
       // Permission check: only creator can edit
-      if (
-        a.telegram_id &&
-        user?.id &&
-        String(a.telegram_id) !== String(user.id)
-      ) {
+      if (a.telegram_id && user?.id && String(a.telegram_id) !== String(user.id)) {
         setUnauthorized(true);
         setLoading(false);
         return;
@@ -83,9 +79,7 @@ function AlbumEditor() {
     ]);
   }
   function rmFaixa(i: number) {
-    setFaixas((f) =>
-      f.filter((_, idx) => idx !== i).map((x, idx) => ({ ...x, numero: idx + 1 }))
-    );
+    setFaixas((f) => f.filter((_, idx) => idx !== i).map((x, idx) => ({ ...x, numero: idx + 1 })));
   }
   function updFaixa(i: number, patch: Partial<AlbumFaixa>) {
     setFaixas((f) => f.map((x, idx) => (idx === i ? { ...x, ...patch } : x)));
@@ -102,15 +96,8 @@ function AlbumEditor() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (
-      !titulo ||
-      !data ||
-      !capa ||
-      faixas.some((f) => !f.titulo || !f.drive_url)
-    ) {
-      setResult(
-        "Preencha título, data, capa e todas as faixas (título + link Drive)."
-      );
+    if (!titulo || !data || !capa || faixas.some((f) => !f.titulo || !f.drive_url)) {
+      setResult("Preencha título, data, capa e todas as faixas (título + link Drive).");
       return;
     }
     setSubmitting(true);
@@ -172,10 +159,7 @@ function AlbumEditor() {
     return (
       <main className="flex-1 mx-auto w-full max-w-2xl px-4 pt-20 text-center">
         <p className="text-muted-foreground">Álbum não encontrado.</p>
-        <Link
-          to="/"
-          className="mt-4 inline-flex text-primary font-bold hover:underline"
-        >
+        <Link to="/" className="mt-4 inline-flex text-primary font-bold hover:underline">
           Voltar para Home
         </Link>
       </main>
@@ -210,22 +194,14 @@ function AlbumEditor() {
         <div className="flex gap-4">
           <div className="size-32 rounded-xl overflow-hidden bg-card grid place-items-center shrink-0">
             {capa ? (
-              <img
-                src={driveImgPreview(capa)}
-                alt="capa"
-                className="w-full h-full object-cover"
-              />
+              <img src={driveImgPreview(capa)} alt="capa" className="w-full h-full object-cover" />
             ) : (
               <ImageIcon className="size-8 text-muted-foreground" />
             )}
           </div>
           <div className="flex-1 space-y-3">
             <Field label="Título do álbum">
-              <Input
-                value={titulo}
-                onChange={(e) => setTitulo(e.target.value)}
-                required
-              />
+              <Input value={titulo} onChange={(e) => setTitulo(e.target.value)} required />
             </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Gênero">
@@ -306,11 +282,7 @@ function AlbumEditor() {
               <div key={i} className="flex gap-2 items-center">
                 <div className="size-12 rounded-lg bg-card overflow-hidden shrink-0">
                   {url && (
-                    <img
-                      src={driveImgPreview(url)}
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={driveImgPreview(url)} alt="" className="w-full h-full object-cover" />
                   )}
                 </div>
                 <Input
@@ -345,10 +317,7 @@ function AlbumEditor() {
           </div>
           <div className="space-y-3">
             {faixas.map((f, i) => (
-              <div
-                key={i}
-                className="p-3 rounded-xl bg-card border border-border space-y-2"
-              >
+              <div key={i} className="p-3 rounded-xl bg-card border border-border space-y-2">
                 <div className="flex items-center gap-2">
                   <span className="size-7 rounded-md bg-primary/15 text-primary grid place-items-center font-black text-sm">
                     {f.numero}
@@ -403,11 +372,7 @@ function AlbumEditor() {
             disabled={submitting}
             className="flex-1 py-3.5 rounded-full bg-primary text-primary-foreground font-extrabold uppercase tracking-wider text-sm disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {submitting ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Save className="size-4" />
-            )}
+            {submitting ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
             Salvar Alterações
           </button>
         </div>

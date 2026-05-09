@@ -27,14 +27,12 @@ function DueloPage() {
 
   useEffect(() => {
     if (!ready || !user) return;
-    Promise.all([api.meusArtistas(user.id), api.listarTodos()]).then(
-      ([meus, todos]) => {
-        setArtists(meus);
-        setAllArtists(todos.filter((t) => !meus.some((m) => m.nome === t.nome)));
-        if (meus.length > 0) setP1(meus[0]);
-        setLoading(false);
-      }
-    );
+    Promise.all([api.meusArtistas(user.id), api.listarTodos()]).then(([meus, todos]) => {
+      setArtists(meus);
+      setAllArtists(todos.filter((t) => !meus.some((m) => m.nome === t.nome)));
+      if (meus.length > 0) setP1(meus[0]);
+      setLoading(false);
+    });
   }, [ready, user]);
 
   async function startDuel() {
@@ -70,10 +68,7 @@ function DueloPage() {
         } else {
           const nextH1 = Math.max(0, health1 - dmg);
           setH1(nextH1);
-          setLog((prev) => [
-            ...prev.slice(-3),
-            `${p2.nome} lançou um shade${"!"} Dano: ${dmg}`,
-          ]);
+          setLog((prev) => [...prev.slice(-3), `${p2.nome} lançou um shade${"!"} Dano: ${dmg}`]);
           runTurn(nextH1, health2);
         }
       }, 800);
@@ -92,10 +87,7 @@ function DueloPage() {
 
   return (
     <main className="flex-1 mx-auto w-full max-w-2xl px-4 pt-6 pb-20 overflow-hidden">
-      <Link
-        to="/"
-        className="inline-flex items-center gap-1 text-muted-foreground mb-4"
-      >
+      <Link to="/" className="inline-flex items-center gap-1 text-muted-foreground mb-4">
         <ChevronLeft className="size-4" /> Voltar
       </Link>
 
@@ -103,9 +95,7 @@ function DueloPage() {
         <div className="size-12 rounded-xl bg-red-500/15 text-red-500 grid place-items-center mb-4 mx-auto">
           <Swords className="size-6" />
         </div>
-        <h1 className="text-3xl font-black italic uppercase tracking-tighter">
-          Arena de Duelos
-        </h1>
+        <h1 className="text-3xl font-black italic uppercase tracking-tighter">Arena de Duelos</h1>
         <p className="text-muted-foreground mt-2 text-sm italic">
           Onde as carreiras são postas à prova.
         </p>
@@ -120,9 +110,7 @@ function DueloPage() {
               </label>
               <select
                 value={p1?.nome || ""}
-                onChange={(e) =>
-                  setP1(artists.find((a) => a.nome === e.target.value) || null)
-                }
+                onChange={(e) => setP1(artists.find((a) => a.nome === e.target.value) || null)}
                 className="w-full bg-card border border-border rounded-xl p-3 text-sm font-bold"
               >
                 {artists.map((a) => (
@@ -138,11 +126,7 @@ function DueloPage() {
               </label>
               <select
                 value={p2?.nome || ""}
-                onChange={(e) =>
-                  setP2(
-                    allArtists.find((a) => a.nome === e.target.value) || null
-                  )
-                }
+                onChange={(e) => setP2(allArtists.find((a) => a.nome === e.target.value) || null)}
                 className="w-full bg-card border border-border rounded-xl p-3 text-sm font-bold"
               >
                 <option value="">Escolher...</option>

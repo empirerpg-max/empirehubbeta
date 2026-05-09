@@ -54,7 +54,14 @@ function PayolaPage() {
   }
 
   const vNum = parseFloat(valor) || 0;
-  const level = vNum >= 1000000 ? "Global" : vNum >= 500000 ? "Nacional" : vNum >= 100000 ? "Regional" : "Inválido";
+  const level =
+    vNum >= 1000000
+      ? "Global"
+      : vNum >= 500000
+        ? "Nacional"
+        : vNum >= 100000
+          ? "Regional"
+          : "Inválido";
 
   return (
     <main className="flex-1 mx-auto w-full max-w-2xl px-4 pt-6 pb-20">
@@ -67,7 +74,9 @@ function PayolaPage() {
           <Megaphone className="size-6" />
         </div>
         <h1 className="text-3xl font-black">Central da Payola</h1>
-        <p className="text-muted-foreground mt-2">Invista nas rádios para impulsionar suas músicas nos charts.</p>
+        <p className="text-muted-foreground mt-2">
+          Invista nas rádios para impulsionar suas músicas nos charts.
+        </p>
       </header>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -116,29 +125,30 @@ function PayolaPage() {
 
         {/* Níveis de Payola */}
         <div className="grid grid-cols-3 gap-3">
-          <LevelCard 
-            active={level === "Regional"} 
-            icon={<Map className="size-4" />} 
-            label="Regional" 
+          <LevelCard
+            active={level === "Regional"}
+            icon={<Map className="size-4" />}
+            label="Regional"
             min="100k"
           />
-          <LevelCard 
-            active={level === "Nacional"} 
-            icon={<Radio className="size-4" />} 
-            label="Nacional" 
+          <LevelCard
+            active={level === "Nacional"}
+            icon={<Radio className="size-4" />}
+            label="Nacional"
             min="500k"
           />
-          <LevelCard 
-            active={level === "Global"} 
-            icon={<Globe className="size-4" />} 
-            label="Global" 
+          <LevelCard
+            active={level === "Global"}
+            icon={<Globe className="size-4" />}
+            label="Global"
             min="1M"
           />
         </div>
 
         <div className="p-4 rounded-xl bg-orange-500/5 border border-orange-500/20">
           <p className="text-xs text-orange-500/80 leading-relaxed italic">
-            * O investimento gera um bônus aleatório de audiência proporcional ao valor investido. O resultado é aplicado na atualização semanal do chart.
+            * O investimento gera um bônus aleatório de audiência proporcional ao valor investido. O
+            resultado é aplicado na atualização semanal do chart.
           </p>
         </div>
 
@@ -157,14 +167,30 @@ function PayolaPage() {
   );
 }
 
-function LevelCard({ active, icon, label, min }: { active: boolean, icon: React.ReactNode, label: string, min: string }) {
+function LevelCard({
+  active,
+  icon,
+  label,
+  min,
+}: {
+  active: boolean;
+  icon: React.ReactNode;
+  label: string;
+  min: string;
+}) {
   return (
-    <div className={`p-4 rounded-2xl border transition-all text-center ${active ? "bg-orange-500 border-orange-500 text-white shadow-xl scale-105" : "bg-card border-border text-muted-foreground"}`}>
-      <div className={`size-8 rounded-full grid place-items-center mx-auto mb-2 ${active ? "bg-white/20" : "bg-muted"}`}>
+    <div
+      className={`p-4 rounded-2xl border transition-all text-center ${active ? "bg-orange-500 border-orange-500 text-white shadow-xl scale-105" : "bg-card border-border text-muted-foreground"}`}
+    >
+      <div
+        className={`size-8 rounded-full grid place-items-center mx-auto mb-2 ${active ? "bg-white/20" : "bg-muted"}`}
+      >
         {icon}
       </div>
       <p className="text-[10px] uppercase font-bold tracking-widest">{label}</p>
-      <p className={`text-xs font-black mt-0.5 ${active ? "text-white" : "text-foreground"}`}>Mín {min}</p>
+      <p className={`text-xs font-black mt-0.5 ${active ? "text-white" : "text-foreground"}`}>
+        Mín {min}
+      </p>
     </div>
   );
 }

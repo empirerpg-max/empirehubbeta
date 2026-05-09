@@ -41,9 +41,9 @@ function RescisaoPage() {
     setSubmitting(false);
   }
 
-  const artist = artists.find(a => a.nome === selectedArtist);
+  const artist = artists.find((a) => a.nome === selectedArtist);
   // Simulação de multa (no backend ela é calulada no Apps Script)
-  const multaEstimada = artist ? 500000 : 0; 
+  const multaEstimada = artist ? 500000 : 0;
 
   return (
     <main className="flex-1 mx-auto w-full max-w-2xl px-4 pt-6 pb-20">
@@ -56,7 +56,9 @@ function RescisaoPage() {
           <FileText className="size-6" />
         </div>
         <h1 className="text-3xl font-black">Rescisão de Contrato</h1>
-        <p className="text-muted-foreground mt-2">Saia da sua gravadora atual para ser independente ou mudar de selo.</p>
+        <p className="text-muted-foreground mt-2">
+          Saia da sua gravadora atual para ser independente ou mudar de selo.
+        </p>
       </header>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -90,29 +92,31 @@ function RescisaoPage() {
         </div>
 
         {artist && artist.gravadora !== "Independent" && (
-            <div className="p-5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500">
-                <div className="flex items-center gap-2 mb-2">
-                    <ShieldAlert className="size-5" />
-                    <h3 className="font-bold">Aviso de Multa Contractual</h3>
-                </div>
-                <p className="text-xs leading-relaxed opacity-90">
-                    Rescindir antes do prazo final implica no pagamento de uma multa de rescisão. 
-                    Verifique se o seu artista possui saldo suficiente em <strong>Empire Coin</strong>.
-                </p>
-                <p className="mt-3 font-black text-sm uppercase tracking-wider">
-                    Multa Aproximada: {fmtEC(multaEstimada)}
-                </p>
+          <div className="p-5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500">
+            <div className="flex items-center gap-2 mb-2">
+              <ShieldAlert className="size-5" />
+              <h3 className="font-bold">Aviso de Multa Contractual</h3>
             </div>
+            <p className="text-xs leading-relaxed opacity-90">
+              Rescindir antes do prazo final implica no pagamento de uma multa de rescisão.
+              Verifique se o seu artista possui saldo suficiente em <strong>Empire Coin</strong>.
+            </p>
+            <p className="mt-3 font-black text-sm uppercase tracking-wider">
+              Multa Aproximada: {fmtEC(multaEstimada)}
+            </p>
+          </div>
         )}
 
         {artist && artist.gravadora === "Independent" && (
-            <div className="p-5 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-500">
-                <div className="flex items-center gap-2 mb-2">
-                    <AlertCircle className="size-5" />
-                    <h3 className="font-bold text-sm">Artista Independente</h3>
-                </div>
-                <p className="text-xs">Você é independente e não precisará pagar multa para se juntar a um selo.</p>
+          <div className="p-5 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-500">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertCircle className="size-5" />
+              <h3 className="font-bold text-sm">Artista Independente</h3>
             </div>
+            <p className="text-xs">
+              Você é independente e não precisará pagar multa para se juntar a um selo.
+            </p>
+          </div>
         )}
 
         <button
@@ -120,7 +124,11 @@ function RescisaoPage() {
           disabled={submitting || !selectedArtist}
           className="w-full py-4 rounded-full bg-red-600 text-white font-extrabold shadow-lg shadow-red-600/20 disabled:opacity-50 flex items-center justify-center gap-2"
         >
-          {submitting ? <Loader2 className="size-4 animate-spin" /> : <ShieldAlert className="size-4" />}
+          {submitting ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <ShieldAlert className="size-4" />
+          )}
           Assinar Rescisão
         </button>
       </form>

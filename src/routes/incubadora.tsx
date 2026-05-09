@@ -1,6 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ChevronLeft, Building2, Loader2, TrendingUp, Gem, Utensils, Zap, ShieldCheck } from "lucide-react";
+import {
+  ChevronLeft,
+  Building2,
+  Loader2,
+  TrendingUp,
+  Gem,
+  Utensils,
+  Zap,
+  ShieldCheck,
+} from "lucide-react";
 import { api, fmtEC, type Artist } from "@/lib/api";
 import { useTelegramUser } from "@/lib/telegram";
 import { notify } from "@/lib/notify";
@@ -11,9 +20,30 @@ export const Route = createFileRoute("/incubadora")({
 });
 
 const SEGMENTS = [
-  { id: "tech", label: "Tech / Streaming", volatility: "Alta", icon: <Zap className="size-4" />, color: "text-blue-500", bg: "bg-blue-500/15" },
-  { id: "beauty", label: "Beleza / Cosméticos", volatility: "Média", icon: <Gem className="size-4" />, color: "text-pink-500", bg: "bg-pink-500/15" },
-  { id: "food", label: "Alimentação / Bebidas", volatility: "Baixa", icon: <Utensils className="size-4" />, color: "text-orange-500", bg: "bg-orange-500/15" },
+  {
+    id: "tech",
+    label: "Tech / Streaming",
+    volatility: "Alta",
+    icon: <Zap className="size-4" />,
+    color: "text-blue-500",
+    bg: "bg-blue-500/15",
+  },
+  {
+    id: "beauty",
+    label: "Beleza / Cosméticos",
+    volatility: "Média",
+    icon: <Gem className="size-4" />,
+    color: "text-pink-500",
+    bg: "bg-pink-500/15",
+  },
+  {
+    id: "food",
+    label: "Alimentação / Bebidas",
+    volatility: "Baixa",
+    icon: <Utensils className="size-4" />,
+    color: "text-orange-500",
+    bg: "bg-orange-500/15",
+  },
 ];
 
 function IncubadoraPage() {
@@ -41,15 +71,18 @@ function IncubadoraPage() {
     e.preventDefault();
     if (!selectedArtist || !nomeEmpresa || !investimento) return;
     setSubmitting(true);
-    // Simulação da chamada de API (visto que no roteador do Apps Script não tinha 'incubadora' explícita, 
-    // mas a estrutura pede. Vou usar o endpoint de compra do market com categoria customizada ou 
+    // Simulação da chamada de API (visto que no roteador do Apps Script não tinha 'incubadora' explícita,
+    // mas a estrutura pede. Vou usar o endpoint de compra do market com categoria customizada ou
     // avisar que é uma ação administrativa por enquanto se não houver lógica de cron para lucro)
     const r = await api.comprarMarket({
-        nome: selectedArtist,
-        categoria: "INCUBADORA",
-        item: `Fundação: ${nomeEmpresa} (${segmento})`
+      nome: selectedArtist,
+      categoria: "INCUBADORA",
+      item: `Fundação: ${nomeEmpresa} (${segmento})`,
     });
-    notify(r, { successFallback: "Empresa fundada com sucesso! Os lucros semanais serão calculados pelo cron." });
+    notify(r, {
+      successFallback:
+        "Empresa fundada com sucesso! Os lucros semanais serão calculados pelo cron.",
+    });
     setSubmitting(false);
   }
 
@@ -64,7 +97,9 @@ function IncubadoraPage() {
           <Building2 className="size-6" />
         </div>
         <h1 className="text-3xl font-black">Incubadora de Empresas</h1>
-        <p className="text-muted-foreground mt-2">Torne-se um magnata dos negócios além da música.</p>
+        <p className="text-muted-foreground mt-2">
+          Torne-se um magnata dos negócios além da música.
+        </p>
       </header>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -92,20 +127,22 @@ function IncubadoraPage() {
               required
             />
           </Field>
-          
+
           <Field label="Capital Inicial (Mín EC 5M)">
-             <Input
-                type="number"
-                value={investimento}
-                onChange={(e) => setInvestimento(e.target.value)}
-                placeholder="5000000"
-                required
-             />
+            <Input
+              type="number"
+              value={investimento}
+              onChange={(e) => setInvestimento(e.target.value)}
+              placeholder="5000000"
+              required
+            />
           </Field>
         </div>
 
         <section>
-          <h3 className="text-xs uppercase tracking-widest font-bold text-muted-foreground mb-3 px-1">Segmento de Atuação</h3>
+          <h3 className="text-xs uppercase tracking-widest font-bold text-muted-foreground mb-3 px-1">
+            Segmento de Atuação
+          </h3>
           <div className="grid grid-cols-1 gap-3">
             {SEGMENTS.map((s) => (
               <button
@@ -130,7 +167,8 @@ function IncubadoraPage() {
         <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20">
           <p className="text-xs text-blue-500/80 leading-relaxed italic flex items-start gap-2">
             <TrendingUp className="size-4 shrink-0" />
-            Empresas geram lucros ou prejuízos semanais baseados na volatilidade do mercado. Mantenha seu capital girando.
+            Empresas geram lucros ou prejuízos semanais baseados na volatilidade do mercado.
+            Mantenha seu capital girando.
           </p>
         </div>
 
@@ -139,7 +177,11 @@ function IncubadoraPage() {
           disabled={submitting || !nomeEmpresa || parseInt(investimento) < 5000000}
           className="w-full py-4 rounded-full bg-blue-600 text-white font-extrabold shadow-lg shadow-blue-600/20 disabled:opacity-50 flex items-center justify-center gap-2"
         >
-          {submitting ? <Loader2 className="size-4 animate-spin" /> : <Building2 className="size-4" />}
+          {submitting ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Building2 className="size-4" />
+          )}
           Fundar Empresa
         </button>
       </form>

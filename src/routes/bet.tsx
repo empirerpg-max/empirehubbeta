@@ -1,12 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import {
-  ChevronLeft,
-  Dice5,
-  Loader2,
-  Info,
-  Trophy,
-} from "lucide-react";
+import { ChevronLeft, Dice5, Loader2, Info, Trophy } from "lucide-react";
 import { api, fmtEC, driveImg } from "@/lib/api";
 import { useTelegramUser } from "@/lib/telegram";
 import { notify } from "@/lib/notify";
@@ -40,14 +34,12 @@ function BetPage() {
 
   useEffect(() => {
     if (!ready || !user) return;
-    Promise.all([api.meusArtistas(user.id), api.getMusicasBet()]).then(
-      ([a, b]) => {
-        setArtists(a);
-        if (a.length > 0) setSelectedArtist(a[0].nome);
-        if (b) setBetData(b);
-        setLoading(false);
-      }
-    );
+    Promise.all([api.meusArtistas(user.id), api.getMusicasBet()]).then(([a, b]) => {
+      setArtists(a);
+      if (a.length > 0) setSelectedArtist(a[0].nome);
+      if (b) setBetData(b);
+      setLoading(false);
+    });
   }, [ready, user]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -88,10 +80,7 @@ function BetPage() {
 
   return (
     <main className="flex-1 mx-auto w-full max-w-2xl px-4 pt-6 pb-20">
-      <Link
-        to="/"
-        className="inline-flex items-center gap-1 text-muted-foreground mb-4"
-      >
+      <Link to="/" className="inline-flex items-center gap-1 text-muted-foreground mb-4">
         <ChevronLeft className="size-4" /> Voltar
       </Link>
 
@@ -136,10 +125,7 @@ function BetPage() {
             <h2 className="text-xs uppercase tracking-widest font-bold text-muted-foreground">
               Hot 100 da Semana: {betData?.semana}
             </h2>
-            <Link
-              to="/charts"
-              className="text-[10px] text-primary font-bold uppercase underline"
-            >
+            <Link to="/charts" className="text-[10px] text-primary font-bold uppercase underline">
               Ver tudo
             </Link>
           </div>
@@ -157,9 +143,7 @@ function BetPage() {
                 />
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold truncate">{m.musica}</p>
-                  <p className="text-[10px] text-muted-foreground truncate">
-                    {m.artista}
-                  </p>
+                  <p className="text-[10px] text-muted-foreground truncate">{m.artista}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] uppercase font-black text-muted-foreground">
@@ -187,10 +171,7 @@ function BetPage() {
           </p>
           <p className="flex items-start gap-2">
             <Info className="size-3 text-purple-500 mt-0.5" />
-            <span>
-              Quanto mais próximo da posição real na próxima semana, maior o
-              prêmio.
-            </span>
+            <span>Quanto mais próximo da posição real na próxima semana, maior o prêmio.</span>
           </p>
         </div>
 
@@ -199,11 +180,7 @@ function BetPage() {
           disabled={submitting || !valor || Object.keys(bets).length === 0}
           className="w-full py-4 rounded-full bg-purple-600 text-white font-extrabold shadow-lg shadow-purple-600/20 disabled:opacity-50 flex items-center justify-center gap-2"
         >
-          {submitting ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <Dice5 className="size-4" />
-          )}
+          {submitting ? <Loader2 className="size-4 animate-spin" /> : <Dice5 className="size-4" />}
           Registrar Aposta
         </button>
       </form>

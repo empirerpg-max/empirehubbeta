@@ -44,17 +44,21 @@ function Index() {
   useEffect(() => {
     if (!ready) return;
     if (user) {
-      api.meusArtistas(user.id)
+      api
+        .meusArtistas(user.id)
         .then(setArtists)
         .catch((err) => {
           console.error("Erro ao carregar artistas:", err);
           setArtists([]); // Fallback para lista vazia se falhar
           toast.error("Erro de conexão", {
-            description: "Não foi possível carregar seus artistas."
+            description: "Não foi possível carregar seus artistas.",
           });
         });
     }
-    api.radar().then((r) => setRadar(r.slice(0, 6))).catch(() => {});
+    api
+      .radar()
+      .then((r) => setRadar(r.slice(0, 6)))
+      .catch(() => {});
   }, [ready, user]);
 
   return (
@@ -65,19 +69,22 @@ function Index() {
       {/* Header */}
       <header className="flex items-center justify-between mb-6">
         <div>
-          <p className="text-xs uppercase tracking-widest text-muted-foreground font-bold group cursor-help" onClick={() => {
-            const params = new URLSearchParams(window.location.search).toString();
-            toast.info("Debug Info", {
-              description: `ID: ${user?.id} | Name: ${user?.name}`,
-              action: {
-                label: "Reset",
-                onClick: () => {
-                  localStorage.removeItem("tg_user_cache");
-                  window.location.reload();
-                }
-              }
-            });
-          }}>
+          <p
+            className="text-xs uppercase tracking-widest text-muted-foreground font-bold group cursor-help"
+            onClick={() => {
+              const params = new URLSearchParams(window.location.search).toString();
+              toast.info("Debug Info", {
+                description: `ID: ${user?.id} | Name: ${user?.name}`,
+                action: {
+                  label: "Reset",
+                  onClick: () => {
+                    localStorage.removeItem("tg_user_cache");
+                    window.location.reload();
+                  },
+                },
+              });
+            }}
+          >
             Empire Hub <Sparkles className="inline size-2 opacity-50" />
           </p>
           <h1 className="text-2xl font-extrabold mt-1">
@@ -123,7 +130,11 @@ function Index() {
         <ShortcutTile to="/bet" label="Empire Bets" icon={<Dice5 className="size-5" />} />
         <ShortcutTile to="/leiloes" label="Leilões" icon={<Gavel className="size-5" />} />
         <ShortcutTile to="/payola" label="Central Payola" icon={<Megaphone className="size-5" />} />
-        <ShortcutTile to="/filantropia" label="Filantropia" icon={<HandHeart className="size-5" />} />
+        <ShortcutTile
+          to="/filantropia"
+          label="Filantropia"
+          icon={<HandHeart className="size-5" />}
+        />
         <ShortcutTile to="/incubadora" label="Incubadora" icon={<Building2 className="size-5" />} />
         <ShortcutTile to="/tutorial" label="Tutorial" icon={<HelpCircle className="size-5" />} />
       </section>

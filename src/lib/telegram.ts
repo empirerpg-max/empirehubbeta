@@ -71,19 +71,24 @@ export function useTelegramUser(): { user: TgUser | null; ready: boolean } {
         const p = new URLSearchParams(str);
         const u = p.get("user");
         if (u) return JSON.parse(u);
-      } catch (e) { return null; }
+      } catch (e) {
+        return null;
+      }
     };
 
     // Se o SDK não entregou o usuário, tentamos parsear a URL manualmente
     if (!sdkUser) {
       const searchParams = new URLSearchParams(window.location.search);
-      const hash = window.location.hash.includes("?") 
-        ? window.location.hash.split("?")[1] 
+      const hash = window.location.hash.includes("?")
+        ? window.location.hash.split("?")[1]
         : window.location.hash.slice(1);
       const hashParams = new URLSearchParams(hash);
-      
-      const webAppDataStr = hashParams.get("tgWebAppData") || searchParams.get("tgWebAppData") || searchParams.get("initData");
-      
+
+      const webAppDataStr =
+        hashParams.get("tgWebAppData") ||
+        searchParams.get("tgWebAppData") ||
+        searchParams.get("initData");
+
       if (webAppDataStr) {
         rawInitData = webAppDataStr;
         sdkUser = userFromInitData(webAppDataStr);

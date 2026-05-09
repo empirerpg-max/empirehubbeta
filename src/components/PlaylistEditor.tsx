@@ -86,7 +86,7 @@ export function PlaylistEditor({ existing }: { existing?: PlaylistPayload }) {
       successFallback: existing ? "Playlist atualizada!" : "Playlist criada!",
     });
     if (ok) {
-      const id = (r as Record<string, unknown>)?.id as string | undefined || existing?.id;
+      const id = ((r as Record<string, unknown>)?.id as string | undefined) || existing?.id;
       if (id) navigate({ to: "/playlists/$id", params: { id } });
       else navigate({ to: "/playlists" });
     }

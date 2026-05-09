@@ -42,8 +42,8 @@ function FilantropiaPage() {
     e.preventDefault();
     const vNum = parseFloat(valor);
     if (!selectedArtist || !causa || vNum < 100000) {
-        notify({ erro: "Valor mínimo: EC 100.000" });
-        return;
+      notify({ erro: "Valor mínimo: EC 100.000" });
+      return;
     }
     setSubmitting(true);
     const r = await api.filantropia(selectedArtist, causa, valor);
@@ -52,7 +52,7 @@ function FilantropiaPage() {
     if (r) setValor("100000");
   }
 
-  const artist = artists.find(a => a.nome === selectedArtist);
+  const artist = artists.find((a) => a.nome === selectedArtist);
   const vNum = parseFloat(valor) || 0;
   const prestigioEstimado = Math.min(50, Math.floor(vNum / 10000));
 
@@ -67,7 +67,9 @@ function FilantropiaPage() {
           <HandHeart className="size-6" />
         </div>
         <h1 className="text-3xl font-black">Filantropia</h1>
-        <p className="text-muted-foreground mt-2">Doe para causas sociais e aumente seu prestígio e reputação.</p>
+        <p className="text-muted-foreground mt-2">
+          Doe para causas sociais e aumente seu prestígio e reputação.
+        </p>
       </header>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -113,23 +115,24 @@ function FilantropiaPage() {
         </div>
 
         <div className="flex gap-3">
-            <div className="flex-1 p-4 rounded-2xl bg-secondary border border-border text-center">
-                <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Gasto</p>
-                <p className="text-sm font-black text-destructive">{fmtEC(vNum)}</p>
+          <div className="flex-1 p-4 rounded-2xl bg-secondary border border-border text-center">
+            <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Gasto</p>
+            <p className="text-sm font-black text-destructive">{fmtEC(vNum)}</p>
+          </div>
+          <div className="flex-1 p-4 rounded-2xl bg-primary/10 border border-primary/20 text-center">
+            <p className="text-[10px] uppercase font-bold text-primary mb-1">Prestígio</p>
+            <div className="flex items-center justify-center gap-1">
+              <Star className="size-3 text-primary" fill="currentColor" />
+              <p className="text-sm font-black text-primary">+{prestigioEstimado}</p>
             </div>
-            <div className="flex-1 p-4 rounded-2xl bg-primary/10 border border-primary/20 text-center">
-                <p className="text-[10px] uppercase font-bold text-primary mb-1">Prestígio</p>
-                <div className="flex items-center justify-center gap-1">
-                    <Star className="size-3 text-primary" fill="currentColor" />
-                    <p className="text-sm font-black text-primary">+{prestigioEstimado}</p>
-                </div>
-            </div>
+          </div>
         </div>
 
         <div className="p-4 rounded-xl bg-card border border-border">
           <p className="text-xs text-muted-foreground leading-relaxed italic flex items-start gap-2">
             <Sparkles className="size-4 text-yellow-500 shrink-0" />
-            Empresas fundações próprias ou entrar em existentes melhoram o legado do artista e sua chance de ganhar prêmios.
+            Empresas fundações próprias ou entrar em existentes melhoram o legado do artista e sua
+            chance de ganhar prêmios.
           </p>
         </div>
 
