@@ -12,19 +12,14 @@ async function startServer() {
 
   // Middleware for CORS and CSP headers required for Telegram Web App
   app.use((req, res, next) => {
-    // Basic CORS for Telegram
-    res.setHeader("Access-Control-Allow-Origin", "*"); // Or "https://web.telegram.org"
+    res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-
-    // allow framing by Telegram and self
-    res.setHeader(
-      "Content-Security-Policy",
-      "frame-ancestors 'self' https://web.telegram.org https://t.me https://ais-pre-iycvwkbdk2nfogeohjrobv-237278842798.us-east5.run.app",
-    );
-
-    // Also set X-Frame-Options to allow framing (CSP frame-ancestors takes precedence in modern browsers)
+    res.setHeader("Access-Control-Allow-Headers", "*");
+    
+    // allow framing by Telegram and anyone else
+    res.setHeader("Content-Security-Policy", "frame-ancestors *");
     res.removeHeader("X-Frame-Options");
+    res.setHeader("X-Frame-Options", "ALLOWALL");
 
     if (req.method === "OPTIONS") {
       res.sendStatus(200);
@@ -40,11 +35,11 @@ async function startServer() {
       appType: "spa",
     });
     app.use(vite.middlewares);
-  } else {
+  } else if (process.env.NODE_ENV === "production") {
     // Production: serve static files from dist
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
-    app.get("*", (req, res) => {
+    app.get("*all", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
