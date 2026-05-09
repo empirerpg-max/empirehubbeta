@@ -55,12 +55,17 @@ function Index() {
       {/* Header */}
       <header className="flex items-center justify-between mb-6">
         <div>
-          <p className="text-xs uppercase tracking-widest text-muted-foreground font-bold">
-            Empire Hub
+          <p className="text-xs uppercase tracking-widest text-muted-foreground font-bold group cursor-help" onClick={() => {
+            const params = new URLSearchParams(window.location.search).toString();
+            toast.info("Debug Info", {
+              description: `URL Params: ${params || 'none'} | ID: ${user?.id} | Name: ${user?.name}`
+            });
+          }}>
+            Empire Hub <Sparkles className="inline size-2 opacity-50" />
           </p>
           <h1 className="text-2xl font-extrabold mt-1">
             {greeting}
-            {user?.name ? `, ${user.name}` : ""}
+            {user?.name && user.id !== "guest" ? `, ${user.name}` : ""}
           </h1>
         </div>
         {user && (

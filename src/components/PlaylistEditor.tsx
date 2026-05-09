@@ -80,13 +80,13 @@ export function PlaylistEditor({ existing }: { existing?: PlaylistPayload }) {
       tracks,
       data: existing?.data || new Date().toISOString().slice(0, 10),
     };
-    const r: any = await api.salvarPlaylist(payload);
+    const r = await api.salvarPlaylist(payload);
     setSubmitting(false);
-    const { ok } = notify(r, {
+    const { ok } = notify(r as Record<string, unknown>, {
       successFallback: existing ? "Playlist atualizada!" : "Playlist criada!",
     });
     if (ok) {
-      const id = r?.id || existing?.id;
+      const id = (r as Record<string, unknown>)?.id as string | undefined || existing?.id;
       if (id) navigate({ to: "/playlists/$id", params: { id } });
       else navigate({ to: "/playlists" });
     }

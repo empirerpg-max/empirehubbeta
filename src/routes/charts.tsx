@@ -35,13 +35,13 @@ function Charts() {
 
       <div className="flex gap-2 mb-4 overflow-x-auto scrollbar-hide -mx-4 px-4">
         {[
-          { id: "prestigio", label: "Prestígio" },
-          { id: "fortuna", label: "Fortuna" },
-          { id: "saldo", label: "$EC" },
+          { id: "prestigio" as const, label: "Prestígio" },
+          { id: "fortuna" as const, label: "Fortuna" },
+          { id: "saldo" as const, label: "$EC" },
         ].map((t) => (
           <button
             key={t.id}
-            onClick={() => setTab(t.id as any)}
+            onClick={() => setTab(t.id)}
             className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${
               tab === t.id ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"
             }`}

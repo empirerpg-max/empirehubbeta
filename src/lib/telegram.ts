@@ -30,12 +30,30 @@ export function useTelegramUser(): { user: TgUser | null; ready: boolean } {
 
     // 1) Procure por IDs comuns na URL (id, tg_id, user_id, uid, telegram_id)
     const params = new URLSearchParams(window.location.search);
-    const urlId = params.get("id") || params.get("tg_id") || params.get("user_id") || params.get("uid") || params.get("telegram_id");
-    const nameFromUrl = params.get("name") || params.get("username") || params.get("first_name");
+    console.log("DEBUG URL Params:", window.location.search);
+
+    const urlId =
+      params.get("id") ||
+      params.get("tg_id") ||
+      params.get("user_id") ||
+      params.get("uid") ||
+      params.get("telegram_id") ||
+      params.get("tgid") ||
+      params.get("tgid");
+
+    const nameFromUrl =
+      params.get("name") ||
+      params.get("username") ||
+      params.get("first_name") ||
+      params.get("user_name");
 
     if (urlId) {
       console.log("Usuário detectado via URL:", urlId);
-      const newUser = { id: urlId, name: nameFromUrl || "Usuário", isTest: urlId.startsWith("test") };
+      const newUser = {
+        id: urlId,
+        name: nameFromUrl || "Usuário",
+        isTest: urlId.startsWith("test"),
+      };
       setUser(newUser);
       localStorage.setItem("tg_user_cache", JSON.stringify(newUser));
       setReady(true);
@@ -45,6 +63,7 @@ export function useTelegramUser(): { user: TgUser | null; ready: boolean } {
     // 2) Tentar Telegram WebApp SDK
     const tg = window.Telegram?.WebApp;
     if (tg) {
+      tg.ready();
       const u = tg.initDataUnsafe?.user;
       if (u) {
         console.log("Usuário detectado via SDK:", u.id);
@@ -55,10 +74,11 @@ export function useTelegramUser(): { user: TgUser | null; ready: boolean } {
         };
         setUser(newUser);
         localStorage.setItem("tg_user_cache", JSON.stringify(newUser));
-        tg.ready();
         tg.expand();
         setReady(true);
         return;
+      } else {
+        console.log("SDK detectado mas sem dados de usuário.");
       }
     }
 

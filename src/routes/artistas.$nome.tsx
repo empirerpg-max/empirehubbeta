@@ -289,8 +289,8 @@ function ActionLink({
 }) {
   return (
     <Link
-      to={to as any}
-      search={params as any}
+      to={to as "/acoes/tour"} // cast to one of the possible routes
+      search={params}
       className="flex items-center gap-3 p-3 rounded-xl bg-card hover:bg-secondary transition-colors"
     >
       <div className="size-10 rounded-lg bg-primary/15 text-primary grid place-items-center">
@@ -402,7 +402,7 @@ function ViralModal({ nome, onClose }: { nome: string; onClose: () => void }) {
   async function go() {
     if (!musica) return;
     setSubmitting(true);
-    const r: any = await api.viral(nome, musica);
+    const r = await api.viral(nome, musica);
     const { ok } = notify(r, { successFallback: "Boost ativado!" });
     setSubmitting(false);
     if (ok) onClose();
@@ -436,7 +436,7 @@ function FilantropiaModal({ nome, onClose }: { nome: string; onClose: () => void
   async function go() {
     if (!causa || !valor) return;
     setSubmitting(true);
-    const r: any = await api.filantropia(nome, causa, valor);
+    const r = await api.filantropia(nome, causa, valor);
     const { ok } = notify(r, { successFallback: "Doação enviada!" });
     setSubmitting(false);
     if (ok) onClose();
@@ -482,7 +482,7 @@ function PayolaModal({ nome, onClose }: { nome: string; onClose: () => void }) {
   const [s, setS] = useState(false);
   async function go() {
     setS(true);
-    const r: any = await api.payola({ nome, musica, valor: Number(valor) });
+    const r = await api.payola({ nome, musica, valor: Number(valor) });
     const { ok } = notify(r, { successFallback: "Payola ativada!" });
     setS(false);
     if (ok) onClose();
@@ -518,7 +518,7 @@ function LeilaoModal({ nome, onClose }: { nome: string; onClose: () => void }) {
   const [s, setS] = useState(false);
   async function go() {
     setS(true);
-    const r: any = await api.publicarLeilao({ nome, descricao, lanceMini: Number(lance) });
+    const r = await api.publicarLeilao({ nome, descricao, lanceMini: Number(lance) });
     const { ok } = notify(r, { successFallback: "Leilão publicado!" });
     setS(false);
     if (ok) onClose();
@@ -553,7 +553,7 @@ function RescisaoModal({ nome, onClose }: { nome: string; onClose: () => void })
   const [s, setS] = useState(false);
   async function go() {
     setS(true);
-    const r: any = await api.rescisao({ nome, destino });
+    const r = await api.rescisao({ nome, destino });
     const { ok } = notify(r, { successFallback: "Rescisão processada!" });
     setS(false);
     if (ok) onClose();
@@ -582,7 +582,7 @@ function ComposicaoModal({ nome, onClose }: { nome: string; onClose: () => void 
   const [s, setS] = useState(false);
   async function go() {
     setS(true);
-    const r: any = await api.venderComposicao({ nome, titulo, preco: Number(preco) });
+    const r = await api.venderComposicao({ nome, titulo, preco: Number(preco) });
     const { ok } = notify(r, { successFallback: "Publicado no Mural!" });
     setS(false);
     if (ok) onClose();
@@ -618,7 +618,7 @@ function ImovelModal({ nome, onClose }: { nome: string; onClose: () => void }) {
   const [s, setS] = useState(false);
   async function go() {
     setS(true);
-    const r: any = await api.comprarImovel({ nome, tipo, cidade });
+    const r = await api.comprarImovel({ nome, tipo, cidade });
     const { ok } = notify(r, { successFallback: "Imóvel adquirido!" });
     setS(false);
     if (ok) onClose();

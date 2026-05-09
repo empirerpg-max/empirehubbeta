@@ -23,8 +23,8 @@ function CinemaForm() {
     if (!titulo || !dataInicio) return;
     setSubmitting(true);
     setResult(null);
-    const r: any = await api.comprarCinema({ nome, titulo, tipo, genero, dataInicio });
-    setResult(typeof r === "string" ? r : r.message || JSON.stringify(r));
+    const r = await api.comprarCinema({ nome, titulo, tipo, genero, dataInicio });
+    setResult(typeof r === "string" ? (r as string) : r.message || JSON.stringify(r));
     setSubmitting(false);
   }
 

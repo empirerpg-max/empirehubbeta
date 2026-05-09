@@ -136,14 +136,13 @@ export function invalidateCache() {
   cache.clear();
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function normalizeArtist(a: any): Artist {
+function normalizeArtist(a: Record<string, unknown>): Artist {
   return {
-    nome: (a.nome || "").trim(),
-    foto: a.foto || "",
-    status: a.status || "Livre",
+    nome: String(a.nome || "").trim(),
+    foto: String(a.foto || ""),
+    status: String(a.status || "Livre"),
     saldo: Number(a.saldo || 0),
-    gravadora: a.gravadora || "Independent",
+    gravadora: String(a.gravadora || "Independent"),
     fortuna_real: Number(a.fortuna_real || 0),
     fortuna_bens: Number(a.fortuna_bens || 0),
     fortuna_total: Number(a.fortuna_total || 0),
@@ -163,17 +162,15 @@ export interface CommonResponse {
 
 export const api = {
   async meusArtistas(telegramId: string): Promise<Artist[]> {
-    const data = await call<unknown[]>(
+    const data = await call<Record<string, unknown>[]>(
       { acao: "meus_artistas", telegram_id: telegramId },
       { cache: true },
     );
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return Array.isArray(data) ? data.map((a) => normalizeArtist(a as any)) : [];
+    return Array.isArray(data) ? data.map((a) => normalizeArtist(a)) : [];
   },
   async listarTodos(): Promise<Artist[]> {
-    const data = await call<unknown[]>({ acao: "listar_todos" }, { cache: true });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return Array.isArray(data) ? data.map((a) => normalizeArtist(a as any)) : [];
+    const data = await call<Record<string, unknown>[]>({ acao: "listar_todos" }, { cache: true });
+    return Array.isArray(data) ? data.map((a) => normalizeArtist(a)) : [];
   },
   async radar(): Promise<RadarItem[]> {
     const data = await call<RadarItem[]>({ acao: "radar" }, { cache: true });
@@ -259,10 +256,9 @@ export const api = {
 
   // ---- Empire Market ----
   async listarMarket(): Promise<MarketItem[]> {
-    const r = await call<unknown[]>({ acao: "listar_market" }, { cache: true });
+    const r = await call<Record<string, unknown>[]>({ acao: "listar_market" }, { cache: true });
     return Array.isArray(r)
-      ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        r.map((x: any) => ({
+      ? r.map((x) => ({
           categoria: String(x.categoria || ""),
           item: String(x.item || ""),
           preco: Number(x.preco || 0),
@@ -306,10 +302,9 @@ export const api = {
     return call<CommonResponse>({ acao: "lancar_album", payload: JSON.stringify(payload) });
   },
   async getAlbum(id: string): Promise<AlbumPayload | null> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const r = await call<any>({ acao: "get_album", id }, { cache: true });
+    const r = await call<AlbumPayload & { error?: string }>({ acao: "get_album", id }, { cache: true });
     if (!r || r.error) return null;
-    return r as AlbumPayload;
+    return r;
   },
   async listarAlbuns(nome?: string): Promise<AlbumPayload[]> {
     const r = await call<AlbumPayload[]>({ acao: "listar_albuns", nome: nome || "" }, { cache: true });
@@ -333,10 +328,9 @@ export const api = {
     return Array.isArray(r) ? r : [];
   },
   async getPlaylist(id: string): Promise<PlaylistPayload | null> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const r = await call<any>({ acao: "get_playlist", id }, { cache: true });
+    const r = await call<PlaylistPayload & { error?: string }>({ acao: "get_playlist", id }, { cache: true });
     if (!r || r.error) return null;
-    return r as PlaylistPayload;
+    return r;
   },
   async salvarPlaylist(payload: PlaylistPayload): Promise<CommonResponse> {
     invalidateCache();
@@ -349,8 +343,7 @@ export const api = {
 
   // ---- Duelo & Bet (Simulação — requer endpoints backend) ----
   async getMusicasBet(): Promise<{ semana: string; musicas: unknown[] } | null> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const r = await call<any>({ acao: "get_musicas_bet" }, { cache: true });
+    const r = await call<{ semana: string; musicas: unknown[]; erro?: string }>({ acao: "get_musicas_bet" }, { cache: true });
     if (!r || r.erro) return null;
     return r;
   },

@@ -30,8 +30,8 @@ function TourForm() {
     if (!titulo || !dataInicio) return;
     setSubmitting(true);
     setResult(null);
-    const r: any = await api.comprarTour({ nome, tipo, titulo, dataInicio, qtd, continente });
-    setResult(typeof r === "string" ? r : r.message || JSON.stringify(r));
+    const r = await api.comprarTour({ nome, tipo, titulo, dataInicio, qtd, continente });
+    setResult(typeof r === "string" ? (r as string) : r.message || JSON.stringify(r));
     setSubmitting(false);
   }
 

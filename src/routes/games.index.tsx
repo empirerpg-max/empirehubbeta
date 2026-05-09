@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChevronLeft, Gamepad2, Play, Star, Trophy } from "lucide-react";
 import { useTelegramUser } from "@/lib/telegram";
 
-export const Route = createFileRoute("/games")({
+export const Route = createFileRoute("/games/")({
   component: GamesHub,
 });
 
@@ -91,7 +91,7 @@ function GamesHub() {
               </div>
 
               <Link
-                to={("/games/" + game.id) as "/games/popstar-quest"}
+                to="/games/popstar-quest"
                 className="mt-6 w-full py-4 rounded-xl bg-primary text-primary-foreground font-black uppercase italic tracking-wider flex items-center justify-center gap-2 transition-transform active:scale-95"
               >
                 <Play className="size-5 fill-current" />

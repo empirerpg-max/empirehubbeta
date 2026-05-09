@@ -16,12 +16,20 @@ export const Route = createFileRoute("/bet")({
   component: BetPage,
 });
 
+interface BetMusic {
+  musica: string;
+  artista: string;
+  capa: string;
+  posicao?: number;
+}
+
 function BetPage() {
   const { user, ready } = useTelegramUser();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [artists, setArtists] = useState<any[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [betData, setBetData] = useState<{ semana: string; musicas: any[] } | null>(null);
+  const [artists, setArtists] = useState<Record<string, any>[]>([]);
+  const [betData, setBetData] = useState<{
+    semana: string;
+    musicas: BetMusic[];
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -137,7 +145,7 @@ function BetPage() {
           </div>
 
           <div className="space-y-2">
-            {betData?.musicas.map((m: any) => (
+            {betData?.musicas.map((m) => (
               <div
                 key={m.musica}
                 className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border group transition-all focus-within:border-primary"

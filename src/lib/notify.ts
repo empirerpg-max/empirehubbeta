@@ -5,15 +5,17 @@ import { toast } from "sonner";
  * O backend retorna strings tipo "✅ ...", "❌ ...", "⚠️ ..." ou JSON com {ok, msg}.
  * Esconde códigos UUID e ruído técnico.
  */
-export function notify(result: any, opts: { successFallback?: string } = {}) {
+export function notify(result: unknown, opts: { successFallback?: string } = {}) {
   let msg = "";
-  if (typeof result === "string") msg = result;
-  else if (result && typeof result === "object") {
-    if (result.erro) msg = "❌ " + result.erro;
-    else if (result.message) msg = result.message;
-    else if (result.msg) msg = result.msg;
-    else if (result.ok === true) msg = "✅ " + (opts.successFallback || "Feito!");
-    else if (result.ok === false) msg = "❌ " + (result.msg || "Falhou.");
+  if (typeof result === "string") {
+    msg = result;
+  } else if (result && typeof result === "object") {
+    const res = result as Record<string, unknown>;
+    if (res.erro) msg = "❌ " + String(res.erro);
+    else if (res.message) msg = String(res.message);
+    else if (res.msg) msg = String(res.msg);
+    else if (res.ok === true) msg = "✅ " + (opts.successFallback || "Feito!");
+    else if (res.ok === false) msg = "❌ " + (String(res.msg) || "Falhou.");
     else msg = opts.successFallback || "Feito!";
   }
 

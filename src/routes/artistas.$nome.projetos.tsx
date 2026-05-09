@@ -49,7 +49,7 @@ function Projetos() {
           </p>
           <Link
             to="/acoes/cinema"
-            search={{ nome } as any}
+            search={{ nome }}
             className="inline-block px-4 py-2 rounded-full bg-primary text-primary-foreground text-xs font-extrabold uppercase tracking-wider"
           >
             Lançar Cinema/TV
