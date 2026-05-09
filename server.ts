@@ -16,13 +16,27 @@ async function startServer() {
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "*");
     
-    // Force extremely permissive CSP to allow framing by all Telegram versions and environments
-    res.setHeader("Content-Security-Policy", "frame-ancestors *;");
+    // CSP specifically for Telegram Web (Desktop and Mobile) and AI Studio
+    // We include self, the main telegram domains, and Google domains for AI Studio.
+    const csp = [
+      "frame-ancestors",
+      "'self'",
+      "https://web.telegram.org",
+      "https://*.telegram.org",
+      "https://t.me",
+      "https://*.t.me",
+      "https://web.tlgrm.app",
+      "https://*.google.com",
+      "https://*.run.app",
+      "https://*.googleusercontent.com",
+      "https://*.lovable.app"
+    ].join(" ");
     
-    // Completely remove or allow framing
-    res.removeHeader("X-Frame-Options");
-    res.setHeader("X-Frame-Options", "ALLOWALL"); 
+    res.setHeader("Content-Security-Policy", csp);
     
+    // Completely remove X-Frame-Options to prevent conflicts with CSP
+    // SENDING "ALLOWALL" IS NON-STANDARD AND CAN CAUSE BLOCKS
+    res.removeHeader("X-Frame-Options");    
     // Disable caching of security headers during development/debug
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
 
