@@ -16,13 +16,17 @@ async function startServer() {
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "*");
     
-    // allow framing by Telegram and the AI Studio environment
+    // Force modern CSP that allows framing from all secure Telegram domains and AI Studio
     res.setHeader(
       "Content-Security-Policy",
-      "frame-ancestors 'self' * https://web.telegram.org https://t.me https://*.telegram.org https://*.google.com https://*.run.app https://*.googleusercontent.com",
+      "frame-ancestors 'self' https: http: t.me *.telegram.org *.google.com *.run.app *.lovable.app",
     );
+    
+    // Completely remove X-Frame-Options to prevent conflicts with CSP
     res.removeHeader("X-Frame-Options");
-    res.setHeader("X-Frame-Options", "ALLOWALL"); // Fallback non-standard header
+    
+    // Disable caching of security headers during development/debug
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
 
     if (req.method === "OPTIONS") {
       res.sendStatus(200);
@@ -42,14 +46,11 @@ async function startServer() {
     // Production: serve static files from dist
     const distPath = path.join(process.cwd(), "dist");
     
-    // Serve static assets first
-    app.use(express.static(distPath, { 
-      index: false,
-      redirect: false 
-    }));
-
-    // Fallback all routes to index.html for SPA
-    app.get("*all", (req, res) => {
+    // Serve static assets
+    app.use(express.static(distPath));
+    
+    // Fallback all routes to index.html for SPA (Catch-all middleware)
+    app.use((req, res) => {
       res.sendFile(path.join(distPath, "index.html"), (err) => {
         if (err) {
           console.error("Error sending index.html:", err);
