@@ -9,6 +9,7 @@ import {
   Gamepad2,
   Mic2,
   RotateCcw,
+  Star,
 } from "lucide-react";
 import { useTelegramUser } from "@/lib/telegram";
 import { api, driveImg, type Artist } from "@/lib/api";
@@ -315,6 +316,9 @@ function PopStarQuest() {
       }
     } catch (err) {
       console.error("ERRO NO LOOP DO JOGO:", err);
+      if (err instanceof Error) {
+        console.error("Stack:", err.stack);
+      }
       stateRef.current = GameState.GAME_OVER;
       setGameState(GameState.GAME_OVER);
     }
