@@ -43,8 +43,18 @@ function Index() {
 
   useEffect(() => {
     if (!ready) return;
-    if (user) api.meusArtistas(user.id).then(setArtists);
-    api.radar().then((r) => setRadar(r.slice(0, 6)));
+    if (user) {
+      api.meusArtistas(user.id)
+        .then(setArtists)
+        .catch((err) => {
+          console.error("Erro ao carregar artistas:", err);
+          setArtists([]); // Fallback para lista vazia se falhar
+          toast.error("Erro de conexão", {
+            description: "Não foi possível carregar seus artistas."
+          });
+        });
+    }
+    api.radar().then((r) => setRadar(r.slice(0, 6))).catch(() => {});
   }, [ready, user]);
 
   return (
@@ -58,7 +68,14 @@ function Index() {
           <p className="text-xs uppercase tracking-widest text-muted-foreground font-bold group cursor-help" onClick={() => {
             const params = new URLSearchParams(window.location.search).toString();
             toast.info("Debug Info", {
-              description: `URL Params: ${params || 'none'} | ID: ${user?.id} | Name: ${user?.name}`
+              description: `ID: ${user?.id} | Name: ${user?.name}`,
+              action: {
+                label: "Reset",
+                onClick: () => {
+                  localStorage.removeItem("tg_user_cache");
+                  window.location.reload();
+                }
+              }
             });
           }}>
             Empire Hub <Sparkles className="inline size-2 opacity-50" />

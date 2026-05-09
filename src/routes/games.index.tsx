@@ -41,6 +41,14 @@ function GamesHub() {
         </p>
       </header>
 
+      {/* Guest Warning */}
+      {user?.id === "guest" && (
+        <section className="mb-8 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs leading-relaxed">
+          <p className="font-bold mb-1">Acesso via Telegram Web (PC)</p>
+          Detectamos que você está usando a versão web do Telegram no computador. Às vezes ela não fornece sua identidade automaticamente. Se encontrar problemas, tente abrir o link direto do bot ou use o celular.
+        </section>
+      )}
+
       {/* ID Status Badge */}
       <div className="mb-6 flex justify-center">
         <div className={`px-4 py-2 rounded-xl text-xs font-bold border flex items-center gap-2 ${user?.id === "guest" ? "bg-red-500/10 border-red-500/30 text-red-500" : "bg-primary/10 border-primary/30 text-primary"}`}>

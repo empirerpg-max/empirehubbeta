@@ -66,6 +66,9 @@
 }
 
 :root {
+  --background: oklch(0.12 0 0);
+  background-color: #000;
+  color: #fff;
   /* Empire Hub — Spotify-inspired: deep black + neon green */
   --radius: 0.875rem;
   --background: oklch(0.12 0 0);

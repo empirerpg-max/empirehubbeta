@@ -60,26 +60,44 @@ export function useTelegramUser(): { user: TgUser | null; ready: boolean } {
       return;
     }
 
-    // 2) Tentar Telegram WebApp SDK
+    // 2) Tentar Telegram WebApp SDK ou Hash (comum em web.telegram.org)
     const tg = window.Telegram?.WebApp;
-    if (tg) {
-      tg.ready();
-      const u = tg.initDataUnsafe?.user;
-      if (u) {
-        console.log("Usuário detectado via SDK:", u.id);
-        const newUser = {
-          id: String(u.id),
-          name: u.first_name || u.username || "Usuário",
-          isTest: false,
-        };
-        setUser(newUser);
-        localStorage.setItem("tg_user_cache", JSON.stringify(newUser));
-        tg.expand();
-        setReady(true);
-        return;
-      } else {
-        console.log("SDK detectado mas sem dados de usuário.");
+    let sdkUser = tg?.initDataUnsafe?.user;
+
+    // Se o SDK não entregou o usuário, tentamos parsear o hash manualmente (comum no PC)
+    if (!sdkUser) {
+      const hash = window.location.hash.slice(1);
+      const hashParams = new URLSearchParams(hash);
+      const webAppDataStr = hashParams.get("tgWebAppData");
+      if (webAppDataStr) {
+        const dataParams = new URLSearchParams(webAppDataStr);
+        const userJson = dataParams.get("user");
+        if (userJson) {
+          try {
+            sdkUser = JSON.parse(userJson);
+            console.log("Usuário detectado via Hash manual (PC):", sdkUser?.id);
+          } catch (e) {
+            console.error("Erro ao parsear usuário do hash:", e);
+          }
+        }
       }
+    }
+
+    if (sdkUser) {
+      if (tg) tg.ready();
+      console.log("Usuário detectado via SDK/Hash:", sdkUser.id);
+      const newUser = {
+        id: String(sdkUser.id),
+        name: sdkUser.first_name || sdkUser.username || "Usuário",
+        isTest: false,
+      };
+      setUser(newUser);
+      localStorage.setItem("tg_user_cache", JSON.stringify(newUser));
+      if (tg) tg.expand();
+      setReady(true);
+      return;
+    } else {
+      console.log("SDK/Hash sem dados de usuário.");
     }
 
     // 3) Tentar recuperar do localStorage (persitência entre páginas)

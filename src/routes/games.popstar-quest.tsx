@@ -91,6 +91,7 @@ function PopStarQuest() {
   const [chartPos, setChartPos] = useState(100);
 
   // Game Engine Refs
+  const stateRef = useRef<GameState>(GameState.LOADING);
   const gameRef = useRef<{
     loop: number | null;
     player: Player | null;
@@ -115,18 +116,63 @@ function PopStarQuest() {
 
   const artistHeadImg = useRef<HTMLImageElement | null>(null);
 
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+
   // 1. Initial Load
   useEffect(() => {
+    const timer = setTimeout(() => setLoadingTimeout(true), 5000);
     if (!ready || !user) return;
-    api.meusArtistas(user.id).then((data) => {
-      setArtists(data);
-      if (data.length > 0) {
-        setSelectedArtist(data[0]);
-        setGameState(GameState.WORLD_MAP);
-      } else {
+    
+    setGameState(GameState.LOADING);
+    stateRef.current = GameState.LOADING;
+    
+    api.meusArtistas(user.id)
+      .then((data) => {
+        clearTimeout(timer);
+        if (data.length > 0) {
+          setArtists(data);
+          setSelectedArtist(data[0]);
+          setGameState(GameState.WORLD_MAP);
+        } else {
+          // Se não tem artistas (novato ou guest), oferece artistas padrão pro jogo
+          const defaults: Artist[] = [
+            { 
+              nome: "Star Kid", 
+              foto: "1_RjUvXzN_B_K7fWHz6G-Uo8JzLXf0y9z", // ID de exemplo ou placeholder
+              status: "Livre",
+              saldo: 0,
+              gravadora: "Independent",
+              fortuna_total: 0,
+              fortuna_real: 0,
+              fortuna_bens: 0,
+              vendas_total: 0,
+              seguidores: 1000,
+              prestigio: 10
+            },
+            { 
+              nome: "Pop Queen", 
+              foto: "1_RjUvXzN_B_K7fWHz6G-Uo8JzLXf0y9z",
+              status: "Livre",
+              saldo: 0,
+              gravadora: "Independent",
+              fortuna_total: 0,
+              fortuna_real: 0,
+              fortuna_bens: 0,
+              vendas_total: 0,
+              seguidores: 5000,
+              prestigio: 20
+            }
+          ];
+          setArtists(defaults);
+          setGameState(GameState.SELECT_ARTIST);
+        }
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        console.error("Erro ao carregar artistas:", err);
+        // Fallback para seleção de artista mesmo com erro na API
         setGameState(GameState.SELECT_ARTIST);
-      }
-    });
+      });
   }, [ready, user]);
 
   // 2. Preload Artist Head
@@ -143,6 +189,7 @@ function PopStarQuest() {
 
   // 3. Game Loop & Logic
   const startLevel = (worldId: number) => {
+    stateRef.current = GameState.PLAYING;
     setGameState(GameState.PLAYING);
     setCurrentWorld(worldId);
     setChartPos(100 - (worldId - 1) * 20);
@@ -260,7 +307,7 @@ function PopStarQuest() {
   const gameLoop = () => {
     update();
     draw();
-    if (gameState === GameState.PLAYING) {
+    if (stateRef.current === GameState.PLAYING) {
       gameRef.current.loop = requestAnimationFrame(gameLoop);
     }
   };
@@ -404,6 +451,7 @@ function PopStarQuest() {
   const handleDeath = () => {
     setLives(l => {
       if (l <= 1) {
+        stateRef.current = GameState.GAME_OVER;
         setGameState(GameState.GAME_OVER);
         return 0;
       }
@@ -419,6 +467,7 @@ function PopStarQuest() {
     gameRef.current.player.invuln = 60;
     setLives(l => {
        if (l <= 1) {
+          stateRef.current = GameState.GAME_OVER;
           setGameState(GameState.GAME_OVER);
           return 0;
        }
@@ -567,6 +616,19 @@ function PopStarQuest() {
         <div className="text-center">
           <Loader2 className="size-12 animate-spin text-primary mx-auto mb-4" />
           <p className="font-arcade text-[10px] tracking-widest text-primary">LOADING ASSETS...</p>
+          {loadingTimeout && (
+            <div className="mt-8">
+              <button 
+                onClick={() => setGameState(GameState.SELECT_ARTIST)}
+                className="px-6 py-3 rounded-xl bg-white/10 border border-white/20 font-arcade text-[10px] text-white/50 hover:text-white"
+              >
+                PULAR CARREGAMENTO
+              </button>
+              <p className="text-[8px] text-muted-foreground mt-4 max-w-xs mx-auto">
+                Se o jogo não carregar em 5 segundos, você pode forçar o início.
+              </p>
+            </div>
+          )}
         </div>
       </main>
     );
@@ -625,12 +687,12 @@ function PopStarQuest() {
       </div>
 
       {/* GAME CANVAS AREA */}
-      <div className="flex-1 relative bg-black grid place-items-center">
+      <div className="flex-1 relative bg-black grid place-items-center p-2">
          <canvas 
            ref={canvasRef} 
            width={CANVAS_WIDTH} 
            height={CANVAS_HEIGHT}
-           className="bg-black shadow-2xl border-4 border-white/10"
+           className="bg-black shadow-2xl border-4 border-white/10 w-full max-w-[640px] h-auto aspect-[4/3] rounded-lg"
            style={{ imageRendering: "pixelated" }}
          />
 
@@ -778,10 +840,22 @@ function ControlBtn({
 }) {
   return (
     <button 
-      onPointerDown={(e) => { e.preventDefault(); onDown(); }}
-      onPointerUp={(e) => { e.preventDefault(); onUp(); }}
-      onPointerCancel={(e) => { e.preventDefault(); onUp(); }}
-      className={`size-16 rounded-2xl ${color} grid place-items-center active:scale-90 transition-transform select-none touch-none`}
+      onPointerDown={(e) => { 
+        e.preventDefault(); 
+        onDown(); 
+      }}
+      onPointerUp={(e) => { 
+        e.preventDefault(); 
+        onUp(); 
+      }}
+      onPointerLeave={(e) => {
+        onUp();
+      }}
+      onPointerCancel={(e) => { 
+        e.preventDefault(); 
+        onUp(); 
+      }}
+      className={`size-16 rounded-2xl ${color} grid place-items-center active:scale-90 transition-transform select-none touch-none shadow-lg border border-white/10`}
     >
       {icon}
     </button>
