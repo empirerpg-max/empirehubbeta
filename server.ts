@@ -30,10 +30,12 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
+    
+    // Serve static files from the dist directory
     app.use(express.static(distPath));
     
-    // Fallback robusto para SPA - usando captura explícita para compatibilidade
-    app.get("(.*)", (req, res) => {
+    // Fallback robusto para SPA
+    app.get("*", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
