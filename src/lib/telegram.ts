@@ -40,6 +40,17 @@ export function useTelegramUser(): {
     setReady(true);
   };
 
+  // Função auxiliar para tentar pegar usuario de uma string de initData
+  const userFromInitData = (str: string) => {
+    try {
+      const p = new URLSearchParams(str);
+      const u = p.get("user");
+      if (u) return JSON.parse(u);
+    } catch (e) {
+      return null;
+    }
+  };
+
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -75,24 +86,33 @@ export function useTelegramUser(): {
       return;
     }
 
-    // 2) Tentar Telegram WebApp SDK ou Hash (comum em web.telegram.org)
-    const tg = window.Telegram?.WebApp;
-    let sdkUser = tg?.initDataUnsafe?.user;
-    let rawInitData = tg?.initData;
-
-    // Função auxiliar para tentar pegar usuario de uma string de initData
-    const userFromInitData = (str: string) => {
-      try {
-        const p = new URLSearchParams(str);
-        const u = p.get("user");
-        if (u) return JSON.parse(u);
-      } catch (e) {
-        return null;
+    // Tentar detectar usuario com polling para garantir que o SDK carregou
+    let attempts = 0;
+    const maxAttempts = 20; // 2 segundos (100ms cada)
+    
+    const checkUser = () => {
+      attempts++;
+      const tg = window.Telegram?.WebApp;
+      let sdkUser = tg?.initDataUnsafe?.user;
+      
+      if (sdkUser) {
+        console.log("Usuário detectado pelo SDK:", sdkUser.id);
+        const newUser = {
+          id: String(sdkUser.id),
+          name: sdkUser.first_name || sdkUser.username || "Usuário",
+          isTest: false,
+        };
+        setUser(newUser);
+        localStorage.setItem("tg_user_cache", JSON.stringify(newUser));
+        if (tg) {
+          tg.ready();
+          tg.expand();
+        }
+        setReady(true);
+        return true;
       }
-    };
-
-    // Se o SDK não entregou o usuário, tentamos parsear a URL manualmente
-    if (!sdkUser) {
+      
+      // Se chegamos aqui e temos initData bruto na URL/Hash, tentamos ele
       const searchParams = new URLSearchParams(window.location.search);
       const hash = window.location.hash.includes("?")
         ? window.location.hash.split("?")[1]
@@ -105,44 +125,51 @@ export function useTelegramUser(): {
         searchParams.get("initData");
 
       if (webAppDataStr) {
-        rawInitData = webAppDataStr;
-        sdkUser = userFromInitData(webAppDataStr);
-        if (sdkUser) console.log("Usuário detectado manual via URL:", sdkUser.id);
+        const u = userFromInitData(webAppDataStr);
+        if (u) {
+          console.log("Usuário detectado via initData manual:", u.id);
+          const newUser = {
+            id: String(u.id),
+            name: u.first_name || u.username || "Usuário",
+            isTest: false,
+          };
+          setUser(newUser);
+          localStorage.setItem("tg_user_cache", JSON.stringify(newUser));
+          setReady(true);
+          return true;
+        }
       }
-    }
 
-    if (sdkUser) {
-      if (tg) tg.ready();
-      const newUser = {
-        id: String(sdkUser.id),
-        name: sdkUser.first_name || sdkUser.username || "Usuário",
-        isTest: false,
-      };
-      setUser(newUser);
-      localStorage.setItem("tg_user_cache", JSON.stringify(newUser));
-      if (tg) tg.expand();
-      setReady(true);
-      return;
-    }
-
-    // 3) Tentar recuperar do localStorage (persitência entre páginas)
-    const cached = localStorage.getItem("tg_user_cache");
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        console.log("Usuário recuperado do cache:", parsed.id);
-        setUser(parsed);
+      if (attempts >= maxAttempts) {
+        // Tentar cache como última esperança antes do guest
+        const cached = localStorage.getItem("tg_user_cache");
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            setUser(parsed);
+            setReady(true);
+            return true;
+          } catch(e) {}
+        }
+        
+        console.warn("Tempo de detecção esgotado. Usando Guest.");
+        setUser({ id: "guest", name: "Guest", isTest: true });
         setReady(true);
-        return;
-      } catch (e) {
-        console.error("Erro ao ler cache de usuário:", e);
+        return true;
       }
-    }
+      
+      return false;
+    };
 
-    // 4) Fallback final
-    console.warn("Nenhum ID detectado. Usando Guest.");
-    setUser({ id: "guest", name: "Guest", isTest: true });
-    setReady(true);
+    // Primeira tentativa imediata
+    if (!checkUser()) {
+      const interval = setInterval(() => {
+        if (checkUser()) {
+          clearInterval(interval);
+        }
+      }, 100);
+      return () => clearInterval(interval);
+    }
   }, []);
 
   return { user, ready, setUserManually };

@@ -10,13 +10,13 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  // Middleware para configurar headers de segurança e permitir framing pelo Telegram
+  // Middleware para configurar headers básicos
   app.use((req, res, next) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "*");
     
-    // Removendo X-Frame-Options para permitir que o app seja carregado dentro do Telegram
+    // Header necessário para o Telegram Mini Apps funcionar em iFrames
     res.removeHeader("X-Frame-Options");
     
     next();
@@ -30,12 +30,10 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
-    // Serve static files from the dist directory
     app.use(express.static(distPath));
     
-    // Fallback for SPA routing in production - using a middleware-based catch-all
-    // to avoid compatibility issues with different Express versions/path-to-regexp
-    app.use((req, res) => {
+    // Fallback robusto para SPA - usando captura explícita para compatibilidade
+    app.get("(.*)", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
