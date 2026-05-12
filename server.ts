@@ -16,8 +16,10 @@ async function startServer() {
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "*");
     
-    // Header necessário para o Telegram Mini Apps funcionar em iFrames
+    // Header necessário para o Telegram Mini Apps funcionar em iFrames e Preview
     res.removeHeader("X-Frame-Options");
+    res.setHeader("Content-Security-Policy", "frame-ancestors 'self' https://web.telegram.org https://*.web.telegram.org https://*.telegram.org https://*.google.com https://*.run.app;");
+    res.setHeader("X-Content-Type-Options", "nosniff");
     
     next();
   });
@@ -29,14 +31,12 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), "dist");
-    const base = "/empirehubbeta/";
+    const distPath = path.join(__dirname, "dist");
     
-    // Serve arquivos estáticos de ambos: raiz e caminho do GitHub
-    app.use(base, express.static(distPath));
+    // Serve arquivos estáticos do diretório dist
     app.use(express.static(distPath));
     
-    // Fallback robusto para SPA
+    // Fallback para SPA - serve o index.html para qualquer rota não encontrada
     app.get("*", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
