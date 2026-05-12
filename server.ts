@@ -30,8 +30,10 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
+    const base = "/empirehubbeta/";
     
-    // Serve static files from the dist directory
+    // Serve arquivos estáticos de ambos: raiz e caminho do GitHub
+    app.use(base, express.static(distPath));
     app.use(express.static(distPath));
     
     // Fallback robusto para SPA
