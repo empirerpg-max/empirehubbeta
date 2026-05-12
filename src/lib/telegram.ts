@@ -21,9 +21,24 @@ export interface TgUser {
   isTest: boolean;
 }
 
-export function useTelegramUser(): { user: TgUser | null; ready: boolean } {
+export function useTelegramUser(): { 
+  user: TgUser | null; 
+  ready: boolean;
+  setUserManually: (id: string, name?: string) => void;
+} {
   const [user, setUser] = useState<TgUser | null>(null);
   const [ready, setReady] = useState(false);
+
+  const setUserManually = (id: string, name?: string) => {
+    const newUser = {
+      id,
+      name: name || "Usuário Manual",
+      isTest: true,
+    };
+    setUser(newUser);
+    localStorage.setItem("tg_user_cache", JSON.stringify(newUser));
+    setReady(true);
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -130,5 +145,5 @@ export function useTelegramUser(): { user: TgUser | null; ready: boolean } {
     setReady(true);
   }, []);
 
-  return { user, ready };
+  return { user, ready, setUserManually };
 }

@@ -28,10 +28,11 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const { user, ready } = useTelegramUser();
+  const { user, ready, setUserManually } = useTelegramUser();
   const [artists, setArtists] = useState<Artist[] | null>(null);
   const [radar, setRadar] = useState<RadarItem[]>([]);
   const [greeting, setGreeting] = useState("");
+  const [manualId, setManualId] = useState("");
 
   useEffect(() => {
     const h = new Date().getHours();
@@ -43,7 +44,7 @@ function Index() {
 
   useEffect(() => {
     if (!ready) return;
-    if (user) {
+    if (user && user.id !== "guest") {
       api
         .meusArtistas(user.id)
         .then(setArtists)
@@ -54,6 +55,8 @@ function Index() {
             description: "Não foi possível carregar seus artistas.",
           });
         });
+    } else if (user?.id === "guest") {
+      setArtists([]);
     }
     api
       .radar()
@@ -99,15 +102,29 @@ function Index() {
         )}
       </header>
 
-      {!user && ready && (
-        <div className="rounded-2xl border border-destructive/40 bg-destructive/10 p-4 mb-6 flex gap-3">
-          <AlertTriangle className="size-5 text-destructive shrink-0 mt-0.5" />
-          <div className="text-sm">
-            <p className="font-bold mb-1">ID do Telegram não detectado.</p>
-            <p className="text-muted-foreground">
-              Abra este app pelo bot do Telegram, ou adicione{" "}
-              <code className="bg-secondary px-1 rounded">?tg_id=SEU_ID</code> na URL para testar.
-            </p>
+      {user?.id === "guest" && ready && (
+        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-6 mb-8 text-center animate-in fade-in slide-in-from-top-4 duration-500">
+          <Sparkles className="size-8 text-primary mx-auto mb-3" />
+          <h3 className="text-lg font-bold mb-2">Bem-vindo ao Império!</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Não conseguimos detectar seu ID do Telegram automaticamente. 
+            Insira-o abaixo para continuar.
+          </p>
+          <div className="flex gap-2 max-w-xs mx-auto">
+            <input
+              type="text"
+              placeholder="Digite seu ID ou Nome"
+              value={manualId}
+              onChange={(e) => setManualId(e.target.value)}
+              className="flex-1 h-10 px-3 rounded-lg bg-background border border-input focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
+              onKeyDown={(e) => e.key === "Enter" && manualId && setUserManually(manualId)}
+            />
+            <button
+              onClick={() => manualId && setUserManually(manualId)}
+              className="h-10 px-4 bg-primary text-primary-foreground rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all"
+            >
+              Entrar
+            </button>
           </div>
         </div>
       )}
