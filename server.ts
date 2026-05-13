@@ -31,13 +31,13 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(__dirname, "dist");
+    const distPath = path.join(process.cwd(), "dist");
     
     // Serve arquivos estáticos do diretório dist
     app.use(express.static(distPath));
     
     // Fallback para SPA - serve o index.html para qualquer rota não encontrada
-    app.get("*", (req, res) => {
+    app.get("*all", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
