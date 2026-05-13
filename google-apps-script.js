@@ -1,29 +1,18 @@
 /**
  * EMPIRE HUB — MOTOR BACKEND INTEGRAL (GOOGLE APPS SCRIPT)
- * Versão: 11.0.0 "Legado Imperial Revisado"
+ * Versão: 12.0.0 "Legado Imperial Corrigido"
  *
- * CORREÇÕES v11:
- * - listar_todas_tours: endpoint correto com colunas do mapa (A,B,C,D,F,G,H,I)
- * - agenda_tour: lê coluna I (JSON de datas) corretamente
- * - listar_market: sem filtro fixo, retorna todas as linhas de CONFIG_SISTEMA com 'categoria'
- * - musicas_bet: lê aba EDIÇÃO CHARTS da planilha ID_EDICAO_CHARTS (coluna B)
- * - listar_playlists: endpoint funcional via telegram_id
- * - salvar_playlist / excluir_playlist: implementados
- * - gravadoras: endpoint funcional lendo DB_ARTISTAS coluna M (índice 12)
- * - rescisao: handler completo com multa e gravação
- * - getTopChartsAll: índices corrigidos (P=15 para tracks, J=9/M=12 para Billboard 200)
- * - listarAlbuns: retorna capa_url de coluna G (índice 6) + faixas JSON
- * - get_album / editar_album / lancar_album: endpoints completos
- * - projetos: lê CONTROLE_TOURS + CONTROLE_CINEMA + Albuns
- * - bet/registrarBet: salva em BETS colunas A-E do mapa
- * - minhas_bets: coluna B=Artista, I=Resultado (índice 8)
- * - leilao: todos os campos corretos (A-G)
- * - lance_leilao: atualiza colunas E e F
- * - publicar_leilao: salva com status Ativo
- * - vender_composicao: salva em MURAL_MARKET com status Disponível
- * - comprar_item (mural): atualiza status e credita vendedor
- * - duelo: peso por posição conforme especificação do mapa
- * - buscar_musicas: busca nas abas de charts
+ * CORREÇÕES v12 (em relação à v11):
+ * - _mapActs: foto corrigida para r[2] (C=Foto), status removido (não existe em ACTS)
+ * - acao=charts: agora retorna Billboard Hot 100 real (top 100 da semana mais recente)
+ *   em vez de artistas ordenados por prestígio
+ * - acao=ranking_prestigio: NOVO — ranking de prestígio separado
+ * - getMural(): id agora é o índice da linha (i+2), não r[0] que é o vendedor
+ * - comprarItemMural(): usa parseInt(p.id) como índice de linha
+ * - getMusicasBet(): fallback normalizado para nome de aba com caracteres especiais
+ * - getAgendaTour(): busca por nome da TOUR (coluna B=r[1]), fallback por artista (A=r[0])
+ * - driveImg(): helper NOVO que normaliza todas as URLs do Google Drive
+ * - Cache key atualizada para TOP_CHARTS_V12 (invalida cache anterior automaticamente)
  */
 
 // ── IDs das Planilhas ──
@@ -37,13 +26,29 @@ function ss()         { return SpreadsheetApp.openById(ID_PRINCIPAL); }
 function aba(nome)    { return ss().getSheetByName(nome) || ss().insertSheet(nome); }
 function jsonOut(obj) { return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON); }
 
+/**
+ * Normaliza URL do Google Drive para formato de visualização direta.
+ * Aceita: links de compartilhamento, /file/d/ID, /uc?id=, drive.google.com/uc?export=view&id=
+ */
+function driveImg(url) {
+  if (!url) return '';
+  const s = String(url).trim();
+  if (s.includes('drive.google.com/uc')) return s;
+  const m = s.match(/[-\w]{25,}/);
+  if (m) return 'https://drive.google.com/uc?export=view&id=' + m[0];
+  return s;
+}
+
 // ── Mapeadores de linha ──
-// ACTS: A=Nome, C=Foto, K=Gênero (índice 10), N=País (índice 13)
+
+/**
+ * ACTS: A=Nome(0), C=Foto(2), K=Gênero(10), N=País(13)
+ * CORREÇÃO v12: foto=r[2] (C=Foto), sem campo 'status' (não existe no mapa de ACTS)
+ */
 function _mapActs(r) {
   return {
     nome:      String(r[0]  || '').trim(),
-    foto:      String(r[2]  || r[1] || ''),
-    status:    String(r[2]  || 'Livre'),
+    foto:      driveImg(String(r[2]  || '')),
     genero:    String(r[10] || '').trim(),
     pais:      String(r[13] || '').trim(),
     fortuna:   parseFloat(r[4])  || 0,
@@ -52,11 +57,15 @@ function _mapActs(r) {
   };
 }
 
-// DB_ARTISTAS: A=Nome, B=Foto, C=Status, D=Saldo, H=Fortuna Total(7), I=Prestigio(8), J=Fadiga(9), K=telegram_id(10)
+/**
+ * DB_ARTISTAS: A=Nome(0), B=Foto(1), C=Status(2), D=Saldo(3),
+ *              H=Fortuna Total(7), I=Prestígio(8), J=Fadiga(9),
+ *              K=telegram_id(10), L=Gênero(11), M=Gravadora(12)
+ */
 function _mapArtistaJogador(r) {
   return {
     nome:          String(r[0]  || '').trim(),
-    foto:          String(r[1]  || ''),
+    foto:          driveImg(String(r[1]  || '')),
     status:        String(r[2]  || 'Livre'),
     saldo:         parseFloat(r[3])  || 0,
     descricao:     String(r[4]  || '').trim(),
@@ -78,18 +87,22 @@ function doGet(e) {
     const acao = p.acao || '';
 
     // Dashboard
-    if (acao === 'meus_artistas')         return meusArtistas(p.telegram_id);
-    if (acao === 'radar')                 return jsonOut(getRadar());
-    if (acao === 'top_charts')            return jsonOut(getTopChartsAll());
-    if (acao === 'vincular_artista')      return jsonOut(vincularArtista(p.nome, p.telegram_id));
-    if (acao === 'artistas_sem_id')       return jsonOut(aba('DB_ARTISTAS').getDataRange().getValues().slice(1).filter(r => !r[10]).map(_mapArtistaJogador));
+    if (acao === 'meus_artistas')          return meusArtistas(p.telegram_id);
+    if (acao === 'radar')                  return jsonOut(getRadar());
+    if (acao === 'top_charts')             return jsonOut(getTopChartsAll());
+    if (acao === 'vincular_artista')       return jsonOut(vincularArtista(p.nome, p.telegram_id));
+    if (acao === 'artistas_sem_id')        return jsonOut(aba('DB_ARTISTAS').getDataRange().getValues().slice(1).filter(r => !r[10]).map(_mapArtistaJogador));
 
     // Artistas (global)
-    if (acao === 'listar_todos')          return jsonOut(aba('ACTS').getDataRange().getValues().slice(1).map(_mapActs));
+    if (acao === 'listar_todos')           return jsonOut(aba('ACTS').getDataRange().getValues().slice(1).map(_mapActs));
 
     // Rankings
+    // acao=ranking          → fortuna total (Ranking de Fortuna)
+    // acao=ranking_prestigio → prestígio (Ranking de Prestígio)
+    // acao=charts           → Billboard Hot 100 real (Charts Billboard)
     if (acao === 'ranking')               return jsonOut(aba('DB_ARTISTAS').getDataRange().getValues().slice(1).map(_mapArtistaJogador).sort((a,b) => b.fortuna_total - a.fortuna_total).slice(0,50));
-    if (acao === 'charts')                return jsonOut(aba('DB_ARTISTAS').getDataRange().getValues().slice(1).map(_mapArtistaJogador).sort((a,b) => b.prestigio - a.prestigio).slice(0,50));
+    if (acao === 'ranking_prestigio')     return jsonOut(aba('DB_ARTISTAS').getDataRange().getValues().slice(1).map(_mapArtistaJogador).sort((a,b) => b.prestigio - a.prestigio).slice(0,50));
+    if (acao === 'charts')                return jsonOut(getChartsHot100());
 
     // Hall da Fama
     if (acao === 'hall_da_fama')          return jsonOut(aba('HALL_DA_FAMA').getDataRange().getValues().slice(1).map(r => ({ artista: r[0], premio: r[1], cat: r[2], obra: r[3], ano: r[4] })).reverse());
@@ -116,7 +129,7 @@ function doGet(e) {
 
     // Market
     if (acao === 'listar_market')         return jsonOut(listarMarket());
-    if (acao === 'mural')                 return jsonOut(aba('MURAL_MARKET').getDataRange().getValues().slice(1).filter(r => String(r[4]).trim() === 'Disponível').map(r => ({ id: r[0], vendedor: r[0], titulo: r[1], teaser: r[2], preco: parseFloat(r[3])||0 })));
+    if (acao === 'mural')                 return jsonOut(getMural());
     if (acao === 'meus_bens')             return jsonOut(aba('INVENTARIO').getDataRange().getValues().slice(1).filter(r => String(r[1]).toLowerCase() === String(p.nome||'').toLowerCase()).map(r => ({ id: r[0], artista: r[1], cat: r[2], item: r[3], valor: parseFloat(r[4])||0 })));
     if (acao === 'comprar_market')        return jsonOut(comprarMarket(p));
     if (acao === 'comprar_item')          return jsonOut(comprarItemMural(p));
@@ -124,34 +137,34 @@ function doGet(e) {
     if (acao === 'vender_composicao')     return jsonOut(venderComposicao(p));
 
     // Leilão
-    if (acao === 'leilao')                return jsonOut(listarLeilao());
-    if (acao === 'lance_leilao')          return jsonOut(darLance(p));
-    if (acao === 'publicar_leilao')       return jsonOut(publicarLeilao(p));
+    if (acao === 'leilao')               return jsonOut(listarLeilao());
+    if (acao === 'lance_leilao')         return jsonOut(darLance(p));
+    if (acao === 'publicar_leilao')      return jsonOut(publicarLeilao(p));
 
     // Bets
-    if (acao === 'musicas_bet')           return jsonOut(getMusicasBet());
-    if (acao === 'bet')                   return jsonOut(registrarBet(p));
-    if (acao === 'minhas_bets')           return jsonOut(minhasBets(p.nome));
+    if (acao === 'musicas_bet')          return jsonOut(getMusicasBet());
+    if (acao === 'bet')                  return jsonOut(registrarBet(p));
+    if (acao === 'minhas_bets')          return jsonOut(minhasBets(p.nome));
 
     // Duelo
-    if (acao === 'duelo')                 return jsonOut(handleDuelo(p.artista1, p.artista2, p.ano));
+    if (acao === 'duelo')                return jsonOut(handleDuelo(p.artista1, p.artista2, p.ano));
 
     // Playlists
-    if (acao === 'listar_playlists')      return jsonOut(listarPlaylists(p.telegram_id));
-    if (acao === 'get_playlist')          return jsonOut(getPlaylist(p.id));
-    if (acao === 'salvar_playlist')       return jsonOut(salvarPlaylist(p));
-    if (acao === 'excluir_playlist')      return jsonOut(excluirPlaylist(p.id, p.telegram_id));
+    if (acao === 'listar_playlists')     return jsonOut(listarPlaylists(p.telegram_id));
+    if (acao === 'get_playlist')         return jsonOut(getPlaylist(p.id));
+    if (acao === 'salvar_playlist')      return jsonOut(salvarPlaylist(p));
+    if (acao === 'excluir_playlist')     return jsonOut(excluirPlaylist(p.id, p.telegram_id));
 
     // Rescisão
-    if (acao === 'rescisao')              return jsonOut(handleRescisao(p));
+    if (acao === 'rescisao')             return jsonOut(handleRescisao(p));
 
     // Filantropia / Payola / Viral
-    if (acao === 'filantropia')           return jsonOut(handleFilantropia(p));
-    if (acao === 'payola')                return jsonOut(handlePayola(p));
-    if (acao === 'viral')                 return jsonOut(handleViral(p));
+    if (acao === 'filantropia')          return jsonOut(handleFilantropia(p));
+    if (acao === 'payola')               return jsonOut(handlePayola(p));
+    if (acao === 'viral')                return jsonOut(handleViral(p));
 
     // Busca músicas
-    if (acao === 'buscar_musicas')        return jsonOut(buscarMusicas(p.q));
+    if (acao === 'buscar_musicas')       return jsonOut(buscarMusicas(p.q));
 
     return jsonOut({ erro: 'Ação Imperial Inválida: ' + acao });
   } catch(err) {
@@ -180,20 +193,24 @@ function meusArtistas(tgId) {
 
 function getRadar() {
   const rows = aba('RADAR_FEED').getDataRange().getValues().slice(1);
-  return rows.slice(-30).map(r => ({ timestamp: r[0], nome: r[1], acao: r[2], foto: r[3] }));
+  return rows.slice(-30).map(r => ({
+    timestamp: r[0],
+    nome:      String(r[1] || '').trim(),
+    acao:      String(r[2] || '').trim(),
+    foto:      driveImg(String(r[3] || ''))
+  }));
 }
 
 // ══════════════════════════════════════════════════════
 //  TOP CHARTS (cache 60s)
-//  MAPA Billboard H100 / Spotify / Apple Music / YouTube / Digital Sales:
-//    B=Data(1), C=Posição(2), D=Música(3), H=Artista(7), P=Foto(15)
-//  MAPA Billboard 200 (ID_ALBUMS / DADOS ÁLBUNS):
-//    B=Data(1), C=Posição(2), D=Álbum(3), J=Foto(9), M=Artista(12)
+//  Tracks (ID_CHARTS): B=Data(1), C=Posição(2), D=Música(3), H=Artista(7), P=Foto(15)
+//  Billboard 200 (ID_ALBUMS / DADOS ÁLBUNS): B=Data(1), C=Posição(2), D=Álbum(3),
+//                                             J=Foto(9), M=Artista(12)
 // ══════════════════════════════════════════════════════
 
 function getTopChartsAll() {
   const cache = CacheService.getScriptCache();
-  const hit   = cache.get('TOP_CHARTS_V11');
+  const hit   = cache.get('TOP_CHARTS_V12');
   if (hit) return JSON.parse(hit);
 
   const cfgTracks = [
@@ -219,7 +236,7 @@ function getTopChartsAll() {
         results[c.key] = {
           musica:  String(topRow[c.iMusica]  || '').trim(),
           artista: String(topRow[c.iArtista] || '').trim(),
-          foto:    String(topRow[c.iFoto]    || '').trim(),
+          foto:    driveImg(String(topRow[c.iFoto] || '').trim()),
           data:    String(topRow[1]),
           url:     c.url
         };
@@ -241,7 +258,7 @@ function getTopChartsAll() {
         results['billboard_200'] = {
           musica:  String(topRow[3]  || '').trim(),
           artista: String(topRow[12] || '').trim(),
-          foto:    String(topRow[9]  || '').trim(),
+          foto:    driveImg(String(topRow[9] || '').trim()),
           data:    String(topRow[1]),
           url:     'https://empirerpg-max.github.io/central/charts.html?tab=DADOS%20%C3%81LBUNS'
         };
@@ -249,8 +266,40 @@ function getTopChartsAll() {
     }
   } catch(err) { results['billboard_200_erro'] = err.message; }
 
-  cache.put('TOP_CHARTS_V11', JSON.stringify(results), 60);
+  cache.put('TOP_CHARTS_V12', JSON.stringify(results), 60);
   return results;
+}
+
+// ══════════════════════════════════════════════════════
+//  CHARTS HOT 100 REAL (acao=charts)
+//  Retorna top 100 da semana mais recente da Billboard Hot 100
+//  NOVO em v12 — v11 retornava artistas por prestígio (incorreto)
+// ══════════════════════════════════════════════════════
+
+function getChartsHot100() {
+  try {
+    const sh = SpreadsheetApp.openById(ID_CHARTS).getSheetByName('BILLBOARD HOT 100');
+    if (!sh) return { erro: 'Aba BILLBOARD HOT 100 não encontrada' };
+    const data = sh.getDataRange().getValues();
+
+    let lastDate = '';
+    for (let i = data.length - 1; i >= 1; i--) {
+      if (data[i][1]) { lastDate = String(data[i][1]); break; }
+    }
+    if (!lastDate) return [];
+
+    return data.slice(1)
+      .filter(r => String(r[1]) === lastDate && parseInt(r[2]) >= 1)
+      .sort((a, b) => parseInt(a[2]) - parseInt(b[2]))
+      .slice(0, 100)
+      .map(r => ({
+        posicao: parseInt(r[2]),
+        musica:  String(r[3] || '').trim(),
+        artista: String(r[7] || '').trim(),
+        foto:    driveImg(String(r[15] || '').trim()),
+        data:    String(r[1])
+      }));
+  } catch(err) { return { erro: err.message }; }
 }
 
 // ══════════════════════════════════════════════════════
@@ -274,11 +323,20 @@ function listarTodasTours() {
     }));
 }
 
+/**
+ * CORREÇÃO v12: busca por nome da TOUR (coluna B = r[1]) com fallback por artista (A = r[0]).
+ * A v11 buscava apenas por artista, mas o parâmetro 'nome' no contexto de agenda_tour
+ * é o nome da turnê.
+ */
 function getAgendaTour(nome) {
   if (!nome) return { erro: 'Nome não informado' };
+  const nomeLower = nome.trim().toLowerCase();
   const data = aba('CONTROLE_TOURS').getDataRange().getValues().slice(1);
-  const row  = data.find(r => String(r[0]).trim().toLowerCase() === nome.trim().toLowerCase());
+
+  let row = data.find(r => String(r[1]).trim().toLowerCase() === nomeLower);
+  if (!row) row = data.find(r => String(r[0]).trim().toLowerCase() === nomeLower);
   if (!row) return { erro: 'Tour não encontrada para: ' + nome };
+
   return {
     artista:     String(row[0]).trim(),
     titulo:      String(row[1]).trim(),
@@ -323,7 +381,7 @@ function listarAlbuns(nome) {
       genero:    String(r[3]).trim(),
       data:      String(r[4]).trim(),
       descricao: String(r[5]).trim(),
-      capa_url:  String(r[6]).trim(),
+      capa_url:  driveImg(String(r[6]).trim()),
       faixas:    _parseJson(r[7])
     }));
 }
@@ -332,7 +390,18 @@ function getAlbum(id) {
   if (!id) return { erro: 'ID não informado' };
   const row = aba('Albuns').getDataRange().getValues().slice(1).find(r => String(r[0]) === String(id));
   if (!row) return { erro: 'Álbum não encontrado' };
-  return { id: row[0], artista: row[1], titulo: row[2], genero: row[3], data: row[4], descricao: row[5], capa_url: row[6], faixas: _parseJson(row[7]), contracapa_url: row[8]||'', encarte: _parseJson(row[9]) };
+  return {
+    id:             row[0],
+    artista:        row[1],
+    titulo:         row[2],
+    genero:         row[3],
+    data:           row[4],
+    descricao:      row[5],
+    capa_url:       driveImg(String(row[6] || '')),
+    faixas:         _parseJson(row[7]),
+    contracapa_url: driveImg(String(row[8] || '')),
+    encarte:        _parseJson(row[9])
+  };
 }
 
 function handleLancarAlbum(payloadStr) {
@@ -340,7 +409,14 @@ function handleLancarAlbum(payloadStr) {
     const p = typeof payloadStr === 'string' ? JSON.parse(payloadStr) : payloadStr;
     if (!p || !p.artista || !p.titulo) return { ok: false, erro: 'Dados incompletos' };
     const id = 'ALB-' + Date.now();
-    aba('Albuns').appendRow([id, p.artista, p.titulo, p.genero||'', p.data||new Date().toISOString().slice(0,10), p.descricao||'', p.capa_url||'', JSON.stringify(p.faixas||[]), p.contracapa_url||'', JSON.stringify(p.encarte||[])]);
+    aba('Albuns').appendRow([
+      id, p.artista, p.titulo, p.genero||'',
+      p.data||new Date().toISOString().slice(0,10),
+      p.descricao||'', p.capa_url||'',
+      JSON.stringify(p.faixas||[]),
+      p.contracapa_url||'',
+      JSON.stringify(p.encarte||[])
+    ]);
     return { ok: true, id };
   } catch(err) { return { ok: false, erro: err.message }; }
 }
@@ -388,7 +464,7 @@ function getProjetosArtista(nome) {
 
   const albuns = aba('Albuns').getDataRange().getValues().slice(1)
     .filter(r => String(r[1]).toLowerCase() === n)
-    .map(r => ({ tipo: 'album', id: r[0], artista: r[1], titulo: r[2], genero: r[3], capa_url: r[6] }));
+    .map(r => ({ tipo: 'album', id: r[0], artista: r[1], titulo: r[2], genero: r[3], capa_url: driveImg(String(r[6] || '')) }));
 
   return { tours, cinema, albuns };
 }
@@ -410,6 +486,24 @@ function listarMarket() {
     }));
 }
 
+/**
+ * CORREÇÃO v12: id agora é o índice real da linha (i+2).
+ * r[0] é o Vendedor, não o ID — estava causando lookup incorreto em comprarItemMural.
+ * MURAL_MARKET: A=Vendedor(0), B=Titulo(1), C=Teaser(2), D=Preco(3), E=Status(4)
+ */
+function getMural() {
+  return aba('MURAL_MARKET').getDataRange().getValues().slice(1)
+    .map((r, i) => ({
+      id:       i + 2,
+      vendedor: String(r[0] || '').trim(),
+      titulo:   String(r[1] || '').trim(),
+      teaser:   String(r[2] || '').trim(),
+      preco:    parseFloat(r[3]) || 0,
+      status:   String(r[4] || '').trim()
+    }))
+    .filter(r => r.status === 'Disponível');
+}
+
 function comprarMarket(p) {
   const d = debitar(p.nome, parseFloat(p.preco) || 0);
   if (!d.ok) return d;
@@ -420,19 +514,19 @@ function comprarMarket(p) {
 function comprarItemMural(p) {
   const ws   = aba('MURAL_MARKET');
   const data = ws.getDataRange().getValues();
-  for (let i = 1; i < data.length; i++) {
-    if (String(data[i][0]) === String(p.id) || String(data[i][1]) === String(p.id)) {
-      if (String(data[i][4]).trim() !== 'Disponível') return { ok: false, erro: 'Item já vendido' };
-      const preco = parseFloat(data[i][3]) || 0;
-      const d = debitar(p.nome, preco);
-      if (!d.ok) return d;
-      ws.getRange(i+1, 5).setValue('Vendido');
-      ws.getRange(i+1, 6).setValue(p.nome);
-      creditarArtista(String(data[i][0]).trim(), preco);
-      return { ok: true };
-    }
+  const idx  = parseInt(p.id);
+  if (!isNaN(idx) && idx >= 2 && idx <= data.length) {
+    const row = data[idx - 1];
+    if (String(row[4]).trim() !== 'Disponível') return { ok: false, erro: 'Item já vendido' };
+    const preco = parseFloat(row[3]) || 0;
+    const d = debitar(p.nome, preco);
+    if (!d.ok) return d;
+    ws.getRange(idx, 5).setValue('Vendido');
+    ws.getRange(idx, 6).setValue(p.nome);
+    creditarArtista(String(row[0]).trim(), preco);
+    return { ok: true };
   }
-  return { ok: false, erro: 'Item não encontrado' };
+  return { ok: false, erro: 'Item não encontrado (id: ' + p.id + ')' };
 }
 
 function venderComposicao(p) {
@@ -501,19 +595,36 @@ function publicarLeilao(p) {
 
 // ══════════════════════════════════════════════════════
 //  BETS
-//  EDIÇÃO CHARTS (ID_EDICAO_CHARTS): coluna B = nomes das músicas
+//  EDIÇÃO CHARTS (ID_EDICAO_CHARTS): coluna A=Semana, B=músicas
 //  BETS: A=ID jogador(0), B=Jogador(1), C=Semana(2), D=Valor(3), E=Previsão(4), I=Resultado(8)
 // ══════════════════════════════════════════════════════
 
+/**
+ * CORREÇÃO v12: fallback robusto para nome de aba com acentos/cedilha.
+ * getSheetByName pode retornar null dependendo do encoding — busca normalizada como fallback.
+ */
 function getMusicasBet() {
   try {
-    const sh = SpreadsheetApp.openById(ID_EDICAO_CHARTS).getSheetByName('EDIÇÃO CHARTS');
-    if (!sh) return { semana: '', musicas: [] };
-    const data   = sh.getDataRange().getValues();
-    const semana = data[1] ? String(data[1][0] || '').trim() : '';
+    const ss2 = SpreadsheetApp.openById(ID_EDICAO_CHARTS);
+    let sh = ss2.getSheetByName('EDIÇÃO CHARTS');
+
+    if (!sh) {
+      const sheets = ss2.getSheets();
+      for (const s of sheets) {
+        const nm = s.getName().trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        if (nm === 'EDICAO CHARTS' || nm.includes('EDICAO')) { sh = s; break; }
+      }
+    }
+
+    if (!sh) return { semana: '', musicas: [], erro: 'Aba EDIÇÃO CHARTS não encontrada' };
+
+    const data    = sh.getDataRange().getValues();
+    const semana  = data[1] ? String(data[1][0] || '').trim() : '';
     const musicas = data.slice(1).map(r => String(r[1] || '').trim()).filter(Boolean);
     return { semana, musicas };
-  } catch(err) { return { semana: '', musicas: [], erro: err.message }; }
+  } catch(err) {
+    return { semana: '', musicas: [], erro: err.message };
+  }
 }
 
 function registrarBet(p) {
@@ -548,7 +659,7 @@ function getGravadoras() {
   data.forEach(r => {
     const grav = String(r[12] || 'Independent').replace(/\s*#\d+$/, '').trim();
     if (!map[grav]) map[grav] = { nome: grav, artistas: [], total: 0 };
-    map[grav].artistas.push({ nome: String(r[0]).trim(), foto: String(r[1]).trim() });
+    map[grav].artistas.push({ nome: String(r[0]).trim(), foto: driveImg(String(r[1]).trim()) });
     map[grav].total += parseFloat(r[7]) || 0;
   });
   return Object.values(map).sort((a, b) => b.total - a.total);
@@ -557,7 +668,8 @@ function getGravadoras() {
 // ══════════════════════════════════════════════════════
 //  DUELO
 //  Peso por posição conforme MAPA:
-//  1=30, 2=28, 3=26, 4=24, 5=22, 6-10=21→17, 11-20=14, 21-30=10, 31-40=5, 41-50=1
+//  1=30, 2=28, 3=26, 4=24, 5=22, 6=21, 7=20, 8=19, 9=18, 10=17
+//  11-20=14, 21-30=10, 31-40=5, 41-50=1
 // ══════════════════════════════════════════════════════
 
 function _pesoPos(pos) {
@@ -608,14 +720,30 @@ function listarPlaylists(telegramId) {
   const nome     = artista ? String(artista[0]).trim().toLowerCase() : '';
   return aba('Playlists').getDataRange().getValues().slice(1)
     .filter(r => String(r[4]).trim().toLowerCase() === nome)
-    .map(r => ({ id: r[0], titulo: r[1], descricao: r[2], capa_url: r[3], nome: r[4], data: r[5], faixas: _parseJson(r[6]) }));
+    .map(r => ({
+      id:        r[0],
+      titulo:    r[1],
+      descricao: r[2],
+      capa_url:  driveImg(String(r[3] || '')),
+      nome:      r[4],
+      data:      r[5],
+      faixas:    _parseJson(r[6])
+    }));
 }
 
 function getPlaylist(id) {
   if (!id) return { erro: 'ID não informado' };
   const row = aba('Playlists').getDataRange().getValues().slice(1).find(r => String(r[0]) === String(id));
   if (!row) return { erro: 'Playlist não encontrada' };
-  return { id: row[0], titulo: row[1], descricao: row[2], capa_url: row[3], nome: row[4], data: row[5], faixas: _parseJson(row[6]) };
+  return {
+    id:        row[0],
+    titulo:    row[1],
+    descricao: row[2],
+    capa_url:  driveImg(String(row[3] || '')),
+    nome:      row[4],
+    data:      row[5],
+    faixas:    _parseJson(row[6])
+  };
 }
 
 function salvarPlaylist(p) {
@@ -623,7 +751,7 @@ function salvarPlaylist(p) {
   const artistas = ss().getSheetByName('DB_ARTISTAS').getDataRange().getValues().slice(1);
   const artista  = p.telegram_id ? artistas.find(r => String(r[10]).trim() === String(p.telegram_id).trim()) : null;
   const nome     = artista ? String(artista[0]).trim() : (p.nome || '');
-  const id = 'PL-' + Date.now();
+  const id       = 'PL-' + Date.now();
   aba('Playlists').appendRow([id, p.titulo, p.descricao||'', p.capa_url||'', nome, new Date().toISOString().slice(0,10), p.tracks_json||'[]']);
   return { ok: true, id };
 }
@@ -703,10 +831,10 @@ function handleViral(p) {
 
 function buscarMusicas(q) {
   if (!q) return [];
-  const q2  = q.toLowerCase();
-  const sh  = SpreadsheetApp.openById(ID_CHARTS).getSheetByName('BILLBOARD HOT 100');
+  const q2   = q.toLowerCase();
+  const sh   = SpreadsheetApp.openById(ID_CHARTS).getSheetByName('BILLBOARD HOT 100');
   const data = sh.getDataRange().getValues().slice(1);
-  const visto = new Set();
+  const visto  = new Set();
   const result = [];
   for (const r of data) {
     const musica = String(r[3] || '').trim();
