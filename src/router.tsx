@@ -60,6 +60,7 @@ export const getRouter = () => {
   const router = createRouter({
     routeTree,
     history: hashHistory,
+    basepath: "/empirehubbeta/",
     context: {},
     scrollRestoration: true,
     defaultPreloadStaleTime: 0,

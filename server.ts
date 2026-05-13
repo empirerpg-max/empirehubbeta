@@ -38,8 +38,8 @@ async function startServer() {
     app.use(express.static(distPath));
     
     // Fallback para SPA - serve o index.html para qualquer rota não encontrada
-    // Usando captura de parâmetro nomeado para compatibilidade com Express 5
-    app.get("/:any*", (req, res) => {
+    // Usando a sintaxe correta do Express 5 (* seguido de um nome)
+    app.get("*all", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
