@@ -16,12 +16,15 @@ async function startServer() {
     }
     
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE");
-    res.setHeader("Access-Control-Allow-Headers", "X-Requested-With, Content-Type, Authorization, Accept");
+    res.setHeader("Access-Control-Allow-Headers", "*");
     res.setHeader("Access-Control-Allow-Credentials", "true");
     
-    // Header necessário para o Telegram Mini Apps funcionar em iFrames e Preview
+    // Header necessário para o Telegram Mini Apps funcionar em iFrames (Telegram exige isso)
     res.removeHeader("X-Frame-Options");
-    // CSP mais permissiva para assets e frames do Telegram
+    
+    // CSP configurada para permitir o iFrame em qualquer lugar do Telegram e Google
+    // O erro "frame-ancestors" sugere que o proxy está injetando uma CSP restritiva.
+    // Tentamos sobrescrever aqui.
     res.setHeader("Content-Security-Policy", "frame-ancestors 'self' https://web.telegram.org https://*.web.telegram.org https://telegram.org https://*.telegram.org https://*.google.com https://*.run.app;");
     res.setHeader("X-Content-Type-Options", "nosniff");
     

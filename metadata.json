@@ -2,5 +2,5 @@
   "name": "Empire Hub",
   "description": "Construa seu império musical, treine artistas e suba nos rankings mundiais nesta aventura integrada ao Telegram.",
   "requestFramePermissions": [],
-  "majorCapabilities": []
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
