@@ -1002,7 +1002,7 @@ function GameFooter({ selectedArtist }: { selectedArtist: Artist | null }) {
     <div className="mt-12 pt-8 border-t border-white/10 flex items-center justify-between">
       <div className="flex items-center gap-3">
         <img
-          src={selectedArtist ? driveImg(selectedArtist.foto, 100) : ""}
+          src={selectedArtist ? (driveImg(selectedArtist.foto, 100) as string) : undefined}
           className="size-10 rounded-full border-2 border-primary"
           alt=""
         />

@@ -147,7 +147,7 @@ function normalizeArtist(a: Record<string, unknown>): Artist {
     foto: String(a.foto || ""),
     status: String(a.status || "Livre"),
     saldo: Number(a.saldo || 0),
-    gravadora: String(a.gravadora || "Independent"),
+    gravadora: String(a.gravadora || "Independent").replace(/\s*#\d+$/, ""),
     fortuna_real: Number(a.fortuna_real || 0),
     fortuna_bens: Number(a.fortuna_bens || 0),
     fortuna_total: Number(a.fortuna_total || 0),
@@ -336,6 +336,10 @@ export const api = {
     invalidateCache();
     return call<CommonResponse>({ acao: "editar_album", payload: JSON.stringify(payload) });
   },
+  async editarFaixaAlbum(payload: { album_id: string; numero: number; [key: string]: any }): Promise<CommonResponse> {
+    invalidateCache();
+    return call<CommonResponse>({ acao: "editar_faixa_album", payload: JSON.stringify(payload) });
+  },
   async excluirAlbum(id: string, telegramId?: string): Promise<CommonResponse> {
     invalidateCache();
     return call<CommonResponse>({ acao: "excluir_album", id, telegram_id: telegramId || "" });
@@ -357,9 +361,17 @@ export const api = {
     if (!r || r.error) return null;
     return r;
   },
-  async salvarPlaylist(payload: PlaylistPayload): Promise<CommonResponse> {
+  async salvarPlaylist(payload: PlaylistPayload, telegramId?: string): Promise<CommonResponse> {
     invalidateCache();
-    return call<CommonResponse>({ acao: "salvar_playlist", payload: JSON.stringify(payload) });
+    return call<CommonResponse>({ 
+      acao: "salvar_playlist", 
+      payload: JSON.stringify(payload),
+      telegram_id: telegramId || payload.telegram_id || "" 
+    });
+  },
+  async listarFaixasCatalogo(): Promise<any[]> {
+    const r = await call<any[]>({ acao: "listar_faixas_catalogo" }, { cache: true });
+    return Array.isArray(r) ? r : [];
   },
   async excluirPlaylist(id: string, telegramId?: string): Promise<CommonResponse> {
     invalidateCache();
@@ -397,6 +409,14 @@ export const api = {
     }
     return [];
   },
+  async ranking(): Promise<Artist[]> {
+    const data = await call<Record<string, unknown>[]>({ acao: "ranking" }, { cache: true });
+    return Array.isArray(data) ? data.map((a) => normalizeArtist(a)) : [];
+  },
+  async charts(): Promise<Artist[]> {
+    const data = await call<Record<string, unknown>[]>({ acao: "charts" }, { cache: true });
+    return Array.isArray(data) ? data.map((a) => normalizeArtist(a)) : [];
+  },
   async getAgendaTour(nome: string): Promise<any> {
     return call<any>({ acao: "agenda_tour", nome }, { cache: true });
   },
@@ -404,7 +424,28 @@ export const api = {
     const r = await call<any[]>({ acao: "buscar_musicas", q: query }, { cache: true });
     return Array.isArray(r) ? r : [];
   },
+  async getArtistasSemId(): Promise<Artist[]> {
+    const data = await call<Record<string, unknown>[]>({ acao: "artistas_sem_id" }, { cache: true });
+    return Array.isArray(data) ? data.map((a) => normalizeArtist(a)) : [];
+  },
+  async vincularArtista(nome: string, telegramId: string): Promise<CommonResponse> {
+    invalidateCache();
+    return call<CommonResponse>({ acao: "vincular_artista", nome, telegram_id: telegramId });
+  },
+  async topCharts(): Promise<Record<string, ChartData>> {
+    const data = await call<Record<string, ChartData>>({ acao: "top_charts" }, { cache: true });
+    return data || {};
+  },
 };
+
+export interface ChartData {
+  musica: string;
+  artista: string;
+  foto: string;
+  data: string;
+  url: string;
+  erro?: string;
+}
 
 export interface PlaylistTrack {
   album_id: string;
@@ -427,7 +468,7 @@ export interface PlaylistPayload {
 }
 
 export function fmtEC(n: number) {
-  return `EC ${(n || 0).toLocaleString("pt-BR")}`;
+  return `E$C ${(n || 0).toLocaleString("pt-BR")}`;
 }
 export function fmtMoney(n: number) {
   return `$${(n || 0).toLocaleString("pt-BR")}`;
@@ -436,25 +477,25 @@ export function fmtMoney(n: number) {
 // Converte link do Drive em URL de imagem visualizável.
 // O endpoint `uc?export=view` não funciona mais (bloqueio CORS desde 2024).
 // Usamos o thumbnail endpoint, que serve direto e aceita parâmetro de tamanho.
-export function driveImg(url: string, size: number = 400): string {
-  if (!url) return "";
+export function driveImg(url: string | undefined | null, size: number = 400): string | undefined {
+  if (!url) return undefined;
   const m = String(url).match(/[-\w]{25,}/);
-  if (!m) return url;
+  if (!m) return undefined;
   return `https://lh3.googleusercontent.com/d/${m[0]}=w${size}-h${size}`;
 }
 
 // Para áudio: extrai ID e retorna URL do player do Drive (iframe-able).
-export function driveAudioSrc(url: string): string {
-  if (!url) return "";
+export function driveAudioSrc(url: string | undefined | null): string | undefined {
+  if (!url) return undefined;
   const m = String(url).match(/[-\w]{25,}/);
-  if (!m) return url;
+  if (!m) return undefined;
   return `https://drive.google.com/file/d/${m[0]}/preview`;
 }
 
 // Tenta gerar URL direto do mp3 (pode não funcionar para todos os arquivos).
-export function driveDirectAudio(url: string): string {
-  if (!url) return "";
+export function driveDirectAudio(url: string | undefined | null): string | undefined {
+  if (!url) return undefined;
   const m = String(url).match(/[-\w]{25,}/);
-  if (!m) return url;
+  if (!m) return undefined;
   return `https://drive.google.com/uc?export=download&id=${m[0]}`;
 }

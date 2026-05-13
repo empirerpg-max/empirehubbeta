@@ -128,7 +128,7 @@ function BetPage() {
         <div className="size-12 rounded-xl bg-purple-500/15 text-purple-500 grid place-items-center mb-4">
           <Dice5 className="size-6" />
         </div>
-        <h1 className="text-3xl font-black italic tracking-tighter uppercase">Empire Bet</h1>
+        <h1 className="text-xl font-black italic tracking-tighter uppercase">Empire Bet</h1>
         <p className="text-sm text-balance text-muted-foreground mt-2 leading-relaxed">
           Aposte no desempenho das músicas nas paradas. Lucro garantido para os visionários.
         </p>

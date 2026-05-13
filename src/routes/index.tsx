@@ -1,346 +1,285 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
-  Radio,
-  Library,
+  RefreshCw,
+  ChevronRight,
+  TrendingUp,
+  User,
+  Wallet,
   Star,
-  Sparkles,
-  AlertTriangle,
-  Crown,
-  Building2,
-  ShoppingBag,
-  Film,
-  HandHeart,
-  Dice5,
-  Gavel,
-  Swords,
-  Megaphone,
-  HelpCircle,
-  Gamepad2,
-  Disc3,
-  ListMusic,
-  RotateCw,
+  Plus,
+  Radio,
+  Music2,
+  Music,
+  PlayCircle,
+  Disc,
+  BarChart3,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTelegramUser } from "@/lib/telegram";
-import { api, fmtEC, fmtMoney, driveImg, type Artist, type RadarItem, invalidateCache } from "@/lib/api";
+import { api, driveImg, type Artist, type RadarItem, invalidateCache, type ChartData } from "@/lib/api";
 
 export const Route = createFileRoute("/")({
   component: Index,
 });
 
 function Index() {
+  const [myArtists, setMyArtists] = useState<Artist[] | null>(null);
+  const [radarFeed, setRadarFeed] = useState<RadarItem[] | null>(null);
+  const [topCharts, setTopCharts] = useState<Record<string, ChartData>>({});
   const { user, ready } = useTelegramUser();
-  const [artists, setArtists] = useState<Artist[] | null>(null);
-  const [radar, setRadar] = useState<RadarItem[]>([]);
-  const [greeting, setGreeting] = useState("");
 
-  useEffect(() => {
-    const h = new Date().getHours();
-    if (h < 6) setGreeting("Boa madrugada");
-    else if (h < 12) setGreeting("Bom dia");
-    else if (h < 18) setGreeting("Boa tarde");
-    else setGreeting("Boa noite");
-  }, []);
+  const fetchData = async () => {
+    // Carregar Meus Artistas
+    if (user && user.id !== "guest") {
+      api.meusArtistas(user.id).then(setMyArtists).catch(() => setMyArtists([]));
+    } else {
+      setMyArtists([]);
+    }
+    
+    // Carregar Radar
+    api.radar().then(setRadarFeed).catch(() => setRadarFeed([]));
+    
+    // Carregar Charts
+    api.topCharts().then(setTopCharts).catch(() => {});
+  };
 
   useEffect(() => {
     if (!ready) return;
-    if (user && user.id !== "guest") {
-      api
-        .meusArtistas(user.id)
-        .then(setArtists)
-        .catch((err) => {
-          console.error("Erro ao carregar artistas:", err);
-          setArtists([]);
-          toast.error("Erro de conexão", {
-            description: "Não foi possível carregar seus artistas.",
-          });
-        });
-    } else if (user?.id === "guest") {
-      setArtists([]);
-    }
-    api
-      .radar()
-      .then((r) => setRadar(r.slice(0, 6)))
-      .catch(() => {});
+    fetchData();
   }, [ready, user]);
 
   const handleSync = () => {
     invalidateCache();
-    toast.success("Sincronizando...", {
-      description: "Buscando dados mais recentes do Império.",
+    toast.success("Empire Sincronizado", {
+      description: "Dados imperiais atualizados com sucesso.",
     });
-    // Trigger re-fetch
-    if (user && user.id !== "guest") {
-      api.meusArtistas(user.id).then(setArtists);
-    }
-    api.radar().then((r) => setRadar(r.slice(0, 6)));
+    fetchData();
   };
 
-  return (
-    <main
-      className="flex-1 mx-auto w-full max-w-2xl px-4 pt-6 pb-12"
-      style={{ background: "var(--gradient-hero)" }}
-    >
-      {/* Filtro SVG para efeito Carvão/Sketch */}
-      <svg style={{ position: "absolute", width: 0, height: 0 }} aria-hidden="true">
-        <filter id="charcoal-filter">
-          <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="3" result="noise" />
-          <feDisplacementMap in="SourceGraphic" in2="noise" scale="2" />
-        </filter>
-      </svg>
+  const openLinkModal = () => (window as any).setShowLinkModal?.(true);
 
-      {/* Header */}
-      <header className="flex items-center justify-between mb-8">
+  return (
+    <div className="pb-24 px-4 pt-6 max-w-md mx-auto min-h-screen">
+      {/* Header Estilo Dashboard */}
+      <header className="flex items-center justify-between mb-6 animate-in fade-in slide-in-from-top-4 duration-700">
         <div>
-          <p
-            className="text-[10px] uppercase tracking-[0.2em] text-primary/70 font-black mb-1 px-1"
-          >
-            Soberania Musical
+          <h1 className="text-2xl font-black italic tracking-tighter uppercase leading-none mb-1">
+            Empire <span className="text-primary">Hub</span>
+          </h1>
+          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-[0.2em] pr-1">
+            Plataforma de Gestão Imperial
           </p>
-          <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-black tracking-tight leading-tight">
-              {greeting}
-              {user?.name && user.id !== "guest" ? `, ${user.name.split(" ")[0]}` : ""}
-            </h1>
-            <button 
-              onClick={handleSync}
-              className="p-2 rounded-xl bg-white/5 active:bg-white/10 active:scale-90 transition-all text-muted-foreground/50 hover:text-primary mt-1"
-              title="Sincronizar"
-            >
-              <RotateCw className="size-4" />
-            </button>
+        </div>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={handleSync}
+            className="size-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center active:scale-90 transition-transform hover:bg-primary/10 hover:text-primary transition-colors"
+            title="Sincronizar"
+          >
+            <RefreshCw className="size-4" />
+          </button>
+          <div className="size-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
+            {user?.photo_url ? (
+               <img src={user.photo_url} className="size-10 rounded-full object-cover" />
+            ) : (
+               <User className="size-5 text-primary" />
+            )}
           </div>
         </div>
-        {user && (
-          <div className="size-12 rounded-2xl bg-primary text-primary-foreground grid place-items-center font-black shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)] charcoal-sketch border-2 border-primary/20">
-            {(user.name?.[0] || "U").toUpperCase()}
-          </div>
-        )}
       </header>
 
-      {/* Meus artistas — Destaque Horizontal */}
-      {user && (
-        <section className="mb-10">
-          <SectionHeader title="Meu Plantel" linkTo="/artistas" />
-          {artists === null ? (
-            <Skeleton h={160} />
-          ) : artists.length === 0 ? (
-            <EmptyCard>Você ainda não recrutou talentos para sua dinastia.</EmptyCard>
-          ) : (
-            <div className="flex gap-4 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-4">
-              {artists.map((a) => (
-                <Link
-                  key={a.nome}
-                  to="/artistas/$nome/"
-                  params={{ nome: a.nome }}
-                  className="shrink-0 w-32 group"
-                >
-                  <div className="aspect-[4/5] rounded-2xl overflow-hidden bg-secondary mb-3 shadow-xl transition-transform group-active:scale-95 border border-white/5 relative">
-                    <img
-                      src={driveImg(a.foto, 300)}
-                      alt={a.nome}
-                      loading="lazy"
-                      className="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                    <div className="absolute bottom-2 left-2 right-2">
-                       <p className="font-bold text-xs truncate leading-none mb-1">{a.nome}</p>
-                       <p className="text-[10px] font-black text-primary uppercase">{fmtEC(a.saldo)}</p>
-                    </div>
-                  </div>
-                </Link>
-              ))}
+      {/* CARROSSEL MEUS ARTISTAS (Destaque Principal) */}
+      <section className="mb-10 animate-in fade-in slide-in-from-left-4 duration-1000 delay-100">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xs font-black uppercase tracking-[0.3em] flex items-center gap-2">
+            <div className="size-2 rounded-full bg-primary animate-pulse" />
+            Meus Artistas
+          </h2>
+          <Link 
+            to="/artistas" 
+            search={{ filter: "mine" }}
+            className="text-[10px] font-black uppercase text-primary tracking-widest hover:underline"
+          >
+            Ver Tudo
+          </Link>
+        </div>
+        
+        {myArtists === null ? (
+          <div className="flex gap-3 overflow-x-hidden">
+            {[1,2].map(i => <div key={i} className="min-w-[180px] h-24 rounded-[1.5rem] bg-white/5 animate-pulse" />)}
+          </div>
+        ) : myArtists.length === 0 ? (
+          <div 
+            onClick={openLinkModal}
+            className="p-6 rounded-[2rem] bg-card/50 border-2 border-dashed border-white/5 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-primary/5 transition-all group"
+          >
+            <Plus className="size-6 text-primary/40 group-hover:scale-110 transition-transform mb-2" />
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+              Nenhum artista vinculado - Toque para conectar
+            </span>
+          </div>
+        ) : (
+          <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 snap-x">
+            {myArtists.map((a) => (
+              <Link
+                key={a.nome}
+                to="/artistas/$nome"
+                params={{ nome: a.nome }}
+                className="min-w-[110px] snap-center p-2 rounded-[1.5rem] bg-white/5 backdrop-blur-md border border-white/10 flex flex-col items-center gap-2 active:scale-95 transition-all group"
+              >
+                <div className="size-14 rounded-[1rem] bg-secondary overflow-hidden flex-shrink-0 border border-white/10 shadow-lg group-hover:scale-105 transition-transform">
+                  <img src={driveImg(a.foto, 150)} className="w-full h-full object-cover" alt={a.nome} />
+                </div>
+                <div className="text-center w-full px-1 overflow-hidden">
+                  <h3 className="text-xs font-black uppercase truncate leading-tight group-hover:text-primary transition-colors">
+                    {a.nome}
+                  </h3>
+                  <p className="text-[10px] font-bold text-primary/70 mt-0.5 whitespace-nowrap overflow-hidden">{fmtEC(a.saldo)}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* BILLBOARD HOT 100 - Glass Style Highlight */}
+      {topCharts.billboard_hot_100 && (
+        <section className="mb-12 animate-in fade-in zoom-in duration-1000 delay-300">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xs font-black uppercase tracking-[0.3em]">Billboard Hot 100 #1</h2>
+          </div>
+          <a 
+            href={topCharts.billboard_hot_100.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group relative block aspect-square rounded-[3.5rem] overflow-hidden border border-white/10 shadow-2xl"
+          >
+            <img 
+              src={driveImg(topCharts.billboard_hot_100.foto, 800)} 
+              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
+              alt="Billboard #1"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80" />
+            
+            {/* Glass Info Overlay */}
+            <div className="absolute inset-x-4 bottom-4 p-5 rounded-[2rem] bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl">
+              <div className="flex items-center gap-4">
+                <div className="size-12 rounded-full bg-primary flex items-center justify-center flex-shrink-0 animate-bounce">
+                   <TrendingUp className="size-6 text-black" />
+                </div>
+                <div className="min-w-0">
+                  <h4 className="text-white text-xs font-black uppercase tracking-tight leading-tight mb-1 line-clamp-1">
+                    {topCharts.billboard_hot_100.musica}
+                  </h4>
+                  <p className="text-primary text-[10px] font-black uppercase tracking-widest truncate">
+                    {topCharts.billboard_hot_100.artista}
+                  </p>
+                </div>
+              </div>
             </div>
-          )}
+            
+            <div className="absolute top-6 right-6">
+              <div className="px-5 py-2.5 rounded-full bg-primary text-black text-[10px] font-black uppercase tracking-widest shadow-xl">
+                Charts This Week
+              </div>
+            </div>
+          </a>
         </section>
       )}
 
-      {/* Hubs de Gestão Criativa */}
-      <div className="space-y-10">
-        <Category
-          title="Empire Studio"
-          description="Gestão de Talentos e Lançamentos"
-          items={[
-            {
-              to: "/artistas",
-              search: { filter: "all" },
-              label: "Empire Artists",
-              icon: <Library className="size-5" />,
-            },
-            { to: "/incubadora", label: "Empire Corp", icon: <Building2 className="size-5" /> },
-            { to: "/albuns", label: "Empire Albums", icon: <Disc3 className="size-5" /> },
-            { to: "/playlists", label: "Empire Playlists", icon: <ListMusic className="size-5" /> },
-          ]}
-        />
-
-        <Category
-          title="Empire Market"
-          description="Investimentos e Transações"
-          items={[
-            { to: "/market", label: "Empire Market", icon: <ShoppingBag className="size-5" /> },
-            { to: "/leiloes", label: "Empire Auctions", icon: <Gavel className="size-5" /> },
-            { to: "/payola", label: "Empire Payola", icon: <Megaphone className="size-5" /> },
-            { to: "/filantropia", label: "Empire Philanthropy", icon: <HandHeart className="size-5" /> },
-          ]}
-        />
-
-        <Category
-          title="Empire Coliseum"
-          description="Dominação e Competitividade"
-          items={[
-            { to: "/charts", label: "Empire Rankings", icon: <Star className="size-5" /> },
-            { to: "/duelo", label: "Empire Duels", icon: <Swords className="size-5" /> },
-            { to: "/hall", label: "Empire Hall", icon: <Crown className="size-5" /> },
-          ]}
-        />
-
-        <Category
-          title="Empire Extras"
-          description="Sorte, Entretenimento e Suporte"
-          items={[
-            { to: "/bet", label: "Empire Bet", icon: <Dice5 className="size-5" /> },
-            { to: "/games", label: "Empire Games", icon: <Gamepad2 className="size-5" /> },
-            { to: "/radar", label: "Empire Radar", icon: <Radio className="size-5" /> },
-            { to: "/tutorial", label: "Empire Guide", icon: <HelpCircle className="size-5" /> },
-          ]}
-        />
-      </div>
-
-      {/* Radar feed simplificado */}
-      <section className="mt-12 mb-8">
-        <SectionHeader title="Flashes da Indústria" linkTo="/radar" />
-        <div className="grid grid-cols-1 gap-2">
-          {radar.slice(0, 4).map((r, i) => (
-             <div key={i} className="flex items-center gap-3 p-3 rounded-2xl bg-white/[0.03] border border-white/5 active:bg-white/[0.05] transition-colors">
-                <div className="size-10 rounded-lg overflow-hidden shrink-0 border border-white/10 charcoal-sketch">
-                   <img src={driveImg(r.foto, 100)} alt={r.nome} className="w-full h-full object-cover grayscale" />
+      {/* PLATFORM CHARTS - INTERACTIVE SCROLL */}
+      <section className="mb-12 animate-in fade-in slide-in-from-right-4 duration-1000 delay-400">
+        <h2 className="text-xs font-black uppercase tracking-[0.3em] mb-4 px-1 opacity-50 text-center">Global Top Positions</h2>
+        <div className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide -mx-4 px-4 snap-x">
+          {[
+            { id: 'spotify', label: 'Spotify', icon: Music2, color: 'text-[#1DB954]' },
+            { id: 'apple_music', label: 'Apple Music', icon: Music, color: 'text-[#FC3C44]' },
+            { id: 'youtube', label: 'YouTube', icon: PlayCircle, color: 'text-[#FF0000]' },
+            { id: 'billboard_200', label: 'Billboard 200', icon: Disc, color: 'text-primary' },
+            { id: 'digital_sales', label: 'Digital Sales', icon: BarChart3, color: 'text-blue-500' }
+          ].map(plat => {
+            const data = topCharts[plat.id];
+            if (!data) return null;
+            return (
+              <a
+                key={plat.id}
+                href={data.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="min-w-[180px] snap-center group relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-white/5 backdrop-blur-md active:scale-95 transition-all shadow-xl"
+              >
+                <div className="aspect-square overflow-hidden relative">
+                  <img 
+                    src={driveImg(data.foto, 400)} 
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 grayscale group-hover:grayscale-0" 
+                    alt={plat.label}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+                  <div className="absolute top-3 left-3 size-9 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center border border-white/10">
+                    <plat.icon className={`size-5 ${plat.color}`} />
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                   <p className="text-xs font-bold truncate">{r.nome}</p>
-                   <p className="text-[10px] text-muted-foreground truncate italic">{r.acao}</p>
+                <div className="p-4">
+                  <span className="text-[9px] font-black uppercase tracking-[0.1em] text-primary mb-1 block">{plat.label}</span>
+                  <h4 className="text-xs font-black uppercase leading-tight line-clamp-1">{data.musica}</h4>
+                  <p className="text-[10px] text-muted-foreground uppercase font-bold truncate opacity-60">{data.artista}</p>
                 </div>
-                <div className="text-[9px] font-bold text-muted-foreground/50">{r.timestamp.split(" ")[1]}</div>
-             </div>
-          ))}
+              </a>
+            );
+          })}
         </div>
       </section>
 
-      <footer className="text-center py-8">
-        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/30 flex items-center justify-center gap-2">
-           EST. 2026 • EMPIRE HUB • CONSTRUA SEU LEGADO
+      {/* Radar Feed - Compact Design */}
+      <section className="animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-500">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xs font-black uppercase tracking-[0.3em] flex items-center gap-2">
+             <Radio className="size-4 text-red-500 animate-pulse" />
+             Radar Feed
+          </h2>
+          <span className="text-[10px] font-black uppercase text-muted-foreground opacity-30">Últimas Atualizações</span>
+        </div>
+        
+        <div className="space-y-4">
+          {radarFeed === null ? (
+            [1,2,3].map(i => <div key={i} className="h-20 rounded-[2rem] bg-white/5 animate-pulse" />)
+          ) : radarFeed.length === 0 ? (
+             <div className="p-10 text-center text-xs uppercase font-black text-muted-foreground opacity-30">Silêncio no Radar...</div>
+          ) : (
+            radarFeed.map((item, idx) => (
+              <div 
+                key={idx}
+                className="flex items-center gap-4 p-5 rounded-[2.5rem] bg-card/40 border border-white/5 hover:bg-white/5 transition-colors group"
+              >
+                <div className="size-14 rounded-[1.5rem] bg-secondary flex-shrink-0 overflow-hidden ring-2 ring-white/5 border border-white/10">
+                  <img src={driveImg(item.foto, 150)} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" alt="Radar" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <h4 className="text-xs font-black uppercase truncate group-hover:text-primary transition-colors">
+                      {item.nome}
+                    </h4>
+                    <span className="text-[10px] font-mono text-primary/50 flex-shrink-0 uppercase">
+                      Live
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground/80 font-medium line-clamp-1 mt-0.5">
+                    {item.acao}
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+
+      <footer className="mt-16 text-center pb-8 border-t border-white/5 pt-8">
+        <p className="text-[9px] font-black uppercase tracking-[0.4em] text-muted-foreground/20">
+           Empire Hub • Est. 2026 • RPG Industry
         </p>
       </footer>
-    </main>
-  );
-}
-
-type CategoryItem = {
-  to?: string;
-  search?: any;
-  label: string;
-  icon: React.ReactNode;
-  comingSoon?: boolean;
-};
-
-function Category({
-  title,
-  description,
-  items,
-}: {
-  title: string;
-  description: string;
-  items: CategoryItem[];
-}) {
-  return (
-    <section>
-      <div className="mb-4">
-        <h3 className="text-lg font-black tracking-tight">{title}</h3>
-        <p className="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-wider">
-          {description}
-        </p>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        {items.map((item, i) => (
-          <ShortcutTile key={i} {...item} />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function ShortcutTile({
-  to,
-  search,
-  label,
-  icon,
-  comingSoon,
-}: {
-  to?: string;
-  search?: any;
-  label: string;
-  icon: React.ReactNode;
-  comingSoon?: boolean;
-}) {
-  if (comingSoon || !to) {
-    return (
-      <button
-        onClick={() =>
-          toast(label + " — em breve", { description: "Estamos trabalhando nessa tela." })
-        }
-        className="flex items-center gap-3 p-3 rounded-xl bg-card/60 hover:bg-secondary transition-colors text-left relative overflow-hidden"
-      >
-        <div className="size-12 rounded-lg bg-muted/40 text-muted-foreground grid place-items-center">
-          {icon}
-        </div>
-        <div className="min-w-0">
-          <span className="block font-bold text-sm truncate">{label}</span>
-          <span className="block text-[9px] uppercase font-bold tracking-wider text-muted-foreground/70">
-            Em breve
-          </span>
-        </div>
-      </button>
-    );
-  }
-  return (
-    <Link
-      to={to}
-      search={search}
-      className="flex items-center gap-3 p-3 rounded-xl bg-card hover:bg-secondary transition-colors group"
-    >
-      <div className="size-12 rounded-lg bg-primary/15 text-primary grid place-items-center group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-        {icon}
-      </div>
-      <span className="font-bold text-sm">{label}</span>
-    </Link>
-  );
-}
-
-function SectionHeader({ title, linkTo }: { title: string; linkTo?: string }) {
-  return (
-    <div className="flex items-baseline justify-between mb-3">
-      <h2 className="text-lg font-extrabold">{title}</h2>
-      {linkTo && (
-        <Link
-          to={linkTo}
-          className="text-xs uppercase tracking-wider text-muted-foreground font-bold hover:text-foreground"
-        >
-          Ver tudo
-        </Link>
-      )}
-    </div>
-  );
-}
-
-function Skeleton({ h }: { h: number }) {
-  return <div className="rounded-xl bg-card animate-pulse" style={{ height: h }} />;
-}
-
-function EmptyCard({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="rounded-xl bg-card p-6 text-center text-sm text-muted-foreground">
-      {children}
     </div>
   );
 }

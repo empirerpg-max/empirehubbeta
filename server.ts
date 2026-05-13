@@ -8,10 +8,9 @@ async function startServer() {
   // Configura o timezone do servidor para o fuso de Brasília (GMT-3)
   process.env.TZ = "America/Sao_Paulo";
 
-  // Middleware para configurar headers básicos e CORS
+  // Middleware para configurar headers básicos e CORS (essencial para Telegram Mini Apps)
   app.use((req, res, next) => {
     const origin = req.headers.origin;
-    // Permite qualquer origin do Telegram ou do próprio app para evitar erros de fetch
     if (origin && (origin.includes("telegram.org") || origin.includes("run.app") || origin.includes("localhost"))) {
       res.setHeader("Access-Control-Allow-Origin", origin);
     } else {
@@ -22,10 +21,9 @@ async function startServer() {
     res.setHeader("Access-Control-Allow-Headers", "*");
     res.setHeader("Access-Control-Allow-Credentials", "true");
     
-    // Essencial para Telegram Mini Apps: remover restrições de iFrame que o Google impõe por padrão
+    // Essencial para Telegram Mini Apps: permitir iFrame
     res.removeHeader("X-Frame-Options");
     
-    // Esta CSP é a que permite o jogo abrir dentro do iFrame do Telegram (Web e App)
     const csp = [
       "frame-ancestors 'self'",
       "https://web.telegram.org",
@@ -46,8 +44,13 @@ async function startServer() {
     next();
   });
 
+  // API routes FIRST
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok" });
+  });
+
+  // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
-    // Import dinâmico do Vite para não quebrar em produção onde o vite pode não estar instalado
     const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -55,27 +58,17 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
+    // Production: serve static files and fallback to index.html
     const distPath = path.join(process.cwd(), "dist");
-    const base = "/empirehubbeta";
-    
-    // Serve arquivos estáticos de ambos: raiz e caminho do GitHub para compatibilidade
-    app.use(base, express.static(distPath));
     app.use(express.static(distPath));
     
-    // Rota de saúde para monitoramento
-    app.get("/api/health", (req, res) => res.json({ status: "ok" }));
-    
-    // Fallback para SPA - usando middleware genérico para evitar erros de regex no Express 5
-    app.use((req, res, next) => {
-      if (req.method === "GET" && (req.accepts("html") || !req.accepts("json"))) {
-        return res.sendFile(path.join(distPath, "index.html"));
-      }
-      next();
+    app.get("*", (req, res) => {
+      res.sendFile(path.join(distPath, "index.html"));
     });
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Servidor rodando em http://0.0.0.0:${PORT}`);
+    console.log(`Server running on http://0.0.0.0:${PORT}`);
   });
 }
 

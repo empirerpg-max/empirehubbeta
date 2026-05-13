@@ -314,7 +314,8 @@ function AlbumForm() {
   );
 }
 
-function driveImgPreview(url: string) {
+function driveImgPreview(url: string | undefined | null) {
+  if (!url) return undefined;
   const m = String(url).match(/[-\w]{25,}/);
-  return m ? `https://lh3.googleusercontent.com/d/${m[0]}=w200-h200` : url;
+  return m ? `https://lh3.googleusercontent.com/d/${m[0]}=w200-h200` : (url as string);
 }

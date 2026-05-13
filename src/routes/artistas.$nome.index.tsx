@@ -23,7 +23,7 @@ import { useTelegramUser } from "@/lib/telegram";
 import { api, fmtEC, fmtMoney, driveImg, type Artist, type AlbumPayload } from "@/lib/api";
 import { notify } from "@/lib/notify";
 
-export const Route = createFileRoute("/artistas/$nome")({
+export const Route = createFileRoute("/artistas/$nome/")({
   component: ArtistDashboard,
 });
 
@@ -32,6 +32,7 @@ function ArtistDashboard() {
   const { user, ready } = useTelegramUser();
   const [artist, setArtist] = useState<Artist | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"bens" | "entretenimento" | "tours">("entretenimento");
   const [modal, setModal] = useState<
     null | "viral" | "filantropia" | "payola" | "leilao" | "rescisao" | "composicao" | "imovel"
   >(null);
@@ -49,178 +50,199 @@ function ArtistDashboard() {
 
   if (loading) {
     return (
-      <main className="flex-1 mx-auto w-full max-w-2xl px-4 pt-6">
-        <div className="h-64 rounded-2xl bg-card animate-pulse" />
-      </main>
+      <div className="flex flex-col items-center justify-center h-[80vh]">
+        <Loader2 className="size-10 animate-spin text-primary" />
+        <p className="mt-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Sincronizando Artista...</p>
+      </div>
     );
   }
+  
   if (!artist) {
     return (
       <main className="flex-1 mx-auto w-full max-w-2xl px-4 pt-6">
-        <Link to="/artistas" className="inline-flex items-center gap-1 text-muted-foreground mb-4">
+        <button onClick={() => window.history.back()} className="inline-flex items-center gap-1 text-muted-foreground mb-4">
           <ChevronLeft className="size-4" /> Voltar
-        </Link>
-        <p>Artista não encontrado.</p>
+        </button>
+        <div className="py-20 text-center">
+           <FileX className="size-12 text-muted-foreground/20 mx-auto mb-4" />
+           <p className="font-black uppercase italic tracking-tighter">Artista não encontrado ou não pertence a você.</p>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="flex-1 mx-auto w-full max-w-2xl">
-      <div
-        className="relative px-4 pt-4 pb-6"
-        style={{ background: "linear-gradient(180deg, oklch(0.32 0.16 145 / 0.55), transparent)" }}
-      >
-        <Link to="/artistas" className="inline-flex items-center gap-1 text-foreground/80 mb-4">
-          <ChevronLeft className="size-5" />
-        </Link>
-        <div className="flex items-end gap-4">
-          <img
-            src={driveImg(artist.foto, 400)}
-            alt={artist.nome}
-            className="size-32 rounded-xl object-cover shadow-2xl bg-secondary"
-            loading="eager"
-          />
-          <div className="flex-1 min-w-0 pb-2">
-            <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
-              Artista
-            </p>
-            <h1 className="text-3xl font-black truncate">{artist.nome}</h1>
-            <p className="text-xs text-muted-foreground mt-1">{artist.gravadora}</p>
-          </div>
-        </div>
-        <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary text-xs font-bold">
-          <span
-            className={`size-2 rounded-full ${artist.status === "Livre" ? "bg-primary" : "bg-yellow-500"}`}
-          />
-          {artist.status === "Livre" ? "DISPONÍVEL" : artist.status.toUpperCase()}
+    <main className="flex-1 pb-24 bg-background">
+      {/* Visual Header */}
+      <div className="relative h-[30vh] min-h-[240px] overflow-hidden">
+        <img 
+          src={driveImg(artist.foto, 1200) || artist.foto} 
+          onError={(e) => {
+            const img = e.currentTarget;
+            if (img.src !== artist.foto) img.src = artist.foto;
+          }}
+          className="w-full h-full object-cover object-top scale-105 opacity-60 transition-opacity duration-700"
+          alt="" 
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+        
+        <button 
+          onClick={() => window.history.back()}
+          className="absolute top-6 left-6 z-30 size-12 rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 flex items-center justify-center shadow-2xl active:scale-90 transition-transform"
+        >
+          <ChevronLeft className="size-6 text-white" />
+        </button>
+
+        {/* Info Overlay */}
+        <div className="absolute inset-x-6 bottom-6 z-20">
+           <div className="flex items-end gap-4">
+              <div className="size-24 rounded-[2rem] overflow-hidden border-2 border-primary/30 shadow-2xl shrink-0 bg-secondary">
+                 <img 
+                  src={driveImg(artist.foto, 400) || artist.foto} 
+                  onError={(e) => {
+                    const img = e.currentTarget;
+                    if (img.src !== artist.foto) img.src = artist.foto;
+                  }}
+                  className="w-full h-full object-cover object-top" 
+                  alt={artist.nome} 
+                />
+              </div>
+              <div className="flex-1 min-w-0 pb-1">
+                 <div className="flex items-center gap-2 mb-1">
+                    <span className="px-1.5 py-0.5 rounded-full bg-primary/20 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/20 leading-none">
+                       {artist.gravadora}
+                    </span>
+                    <span className="text-[11px] font-black text-white/50 uppercase tracking-widest italic">{artist.genero}</span>
+                 </div>
+                 <h1 className="text-2xl font-black italic uppercase tracking-tighter leading-none mb-1 drop-shadow-xl truncate">
+                    {artist.nome}
+                 </h1>
+                 <div className="flex items-center gap-2">
+                    <div className={`size-1.5 rounded-full ${artist.status === "Livre" ? "bg-primary animate-pulse" : "bg-yellow-500"}`} />
+                    <span className="text-[10px] font-black text-white/70 uppercase tracking-widest">{artist.status}</span>
+                 </div>
+              </div>
+           </div>
         </div>
       </div>
 
-      <div className="px-4 space-y-6">
-        <section className="grid grid-cols-2 gap-3">
-          <StatCard
-            icon={<Wallet className="size-4" />}
-            label="Saldo $EC"
-            value={fmtEC(artist.saldo)}
-            accent
-          />
-          <StatCard
-            icon={<Briefcase className="size-4" />}
-            label="Fortuna total"
-            value={fmtMoney(artist.fortuna_total)}
-          />
-          <StatCard
-            icon={<Trophy className="size-4" />}
-            label="Prestígio"
-            value={`${artist.prestigio}/1000`}
-            bar={artist.prestigio / 10}
-          />
-          <StatCard
-            icon={<Zap className="size-4" />}
-            label="Fadiga"
-            value={`${artist.fadiga}%`}
-            bar={artist.fadiga}
-            barColor="oklch(0.7 0.2 30)"
-          />
-        </section>
+      <div className="px-6 space-y-8 relative z-20 -mt-2">
+        {/* Core Stats */}
+        <div className="grid grid-cols-2 gap-2">
+           <StatCardV2 
+              label="Empire Coin (E$C)" 
+              value={fmtEC(artist.saldo)} 
+              icon={<Wallet className="size-3.5" />}
+              accent 
+           />
+           <StatCardV2 
+              label="Fortuna Total" 
+              value={fmtMoney(artist.fortuna_total)} 
+              icon={<Briefcase className="size-3.5" />} 
+           />
+           <div className="col-span-2 grid grid-cols-2 gap-2">
+              <StatCompact label="Prestígio Imperial" value={artist.prestigio} max={1000} icon={<Trophy className="size-3.5" />} color="text-amber-400" />
+              <StatCompact label="Fadiga Vocal" value={artist.fadiga} max={100} icon={<Zap className="size-3.5" />} color="text-rose-400" reverse />
+           </div>
+        </div>
 
+        {/* Global Action Buttons */}
+        <div className="grid grid-cols-3 gap-3">
+           <QuickAction icon={<Disc3 className="size-6 text-purple-400" />} label="Álbum" id="btn-album" to="/acoes/album" params={{ nome: artist.nome }} />
+           <QuickAction icon={<Mic2 className="size-6 text-emerald-400" />} label="Turnê" id="btn-tour" to="/acoes/tour" params={{ nome: artist.nome }} />
+           <QuickAction icon={<Film className="size-6 text-blue-400" />} label="Cinema" id="btn-cinema" to="/acoes/cinema" params={{ nome: artist.nome }} />
+        </div>
+
+        {/* Tabs Content */}
         <section>
-          <h2 className="text-lg font-extrabold mb-3">Ações</h2>
-          <div className="grid grid-cols-2 gap-3">
-            <ActionLink
-              to="/acoes/tour"
-              params={{ nome: artist.nome }}
-              icon={<Mic2 className="size-5" />}
-              label="Comprar Tour"
-            />
-            <ActionLink
-              to="/acoes/cinema"
-              params={{ nome: artist.nome }}
-              icon={<Film className="size-5" />}
-              label="Cinema / TV"
-            />
-            <ActionLink
-              to="/acoes/album"
-              params={{ nome: artist.nome }}
-              icon={<Disc3 className="size-5" />}
-              label="Lançar Álbum"
-            />
-            <ActionButton
-              onClick={() => setModal("viral")}
-              icon={<Flame className="size-5" />}
-              label="Viral"
-            />
-            <ActionButton
-              onClick={() => setModal("filantropia")}
-              icon={<HandHeart className="size-5" />}
-              label="Filantropia"
-            />
-            <ActionButton
-              onClick={() => setModal("payola")}
-              icon={<Radio className="size-5" />}
-              label="Payola"
-            />
-            <ActionButton
-              onClick={() => setModal("leilao")}
-              icon={<Gavel className="size-5" />}
-              label="Leilão"
-            />
-            <ActionButton
-              onClick={() => setModal("composicao")}
-              icon={<Disc3 className="size-5" />}
-              label="Vender Comp."
-            />
-            <ActionButton
-              onClick={() => setModal("imovel")}
-              icon={<Building2 className="size-5" />}
-              label="Comprar Imóvel"
-            />
-            <ActionButton
-              onClick={() => setModal("rescisao")}
-              icon={<FileX className="size-5" />}
-              label="Rescindir"
-            />
-            <ProjectsLink nome={artist.nome} />
-            <BensLink nome={artist.nome} />
-            <MarketLink />
+          <div className="flex gap-2 p-1 bg-card rounded-[2rem] border border-white/5 mb-6">
+             <TabButton active={activeTab === "entretenimento"} onClick={() => setActiveTab("entretenimento")}>Gestão</TabButton>
+             <TabButton active={activeTab === "bens"} onClick={() => setActiveTab("bens")}>Bens</TabButton>
+             <TabButton active={activeTab === "tours"} onClick={() => setActiveTab("tours")}>Histórico</TabButton>
+          </div>
+
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+             {activeTab === "entretenimento" && (
+                <div className="grid grid-cols-2 gap-3">
+                   <MiniAction label="Viral" icon={<Flame />} onClick={() => setModal("viral")} color="text-rose-500" />
+                   <MiniAction label="Payola" icon={<Radio />} onClick={() => setModal("payola")} color="text-primary" />
+                   <MiniAction label="Filantropia" icon={<HandHeart />} onClick={() => setModal("filantropia")} color="text-emerald-500" />
+                   <MiniAction label="Leilão" icon={<Gavel />} onClick={() => setModal("leilao")} color="text-amber-500" />
+                   <MiniAction label="Market" icon={<ShoppingBag />} to="/market" color="text-indigo-500" />
+                   <MiniAction label="Vender Comp." icon={<Disc3 />} onClick={() => setModal("composicao")} color="text-purple-500" />
+                   <div className="col-span-2 mt-4 space-y-3">
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/30 px-1">Administrativo</h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        <MiniAction label="Rescindir" icon={<FileX />} onClick={() => setModal("rescisao")} color="text-destructive font-black" />
+                      </div>
+                   </div>
+                </div>
+             )}
+
+             {activeTab === "bens" && (
+                <div className="space-y-4">
+                   <div className="flex items-center justify-between px-1">
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 text-emerald-500">Patrimônio Adquirido</h4>
+                      <button onClick={() => setModal("imovel")} className="text-[10px] font-black text-primary uppercase">+ Comprar</button>
+                   </div>
+                   <Link to="/artistas/$nome/bens" params={{ nome: artist.nome }} className="block p-8 rounded-[2.5rem] bg-card border border-white/5 text-center transition-all hover:bg-white/[0.04]">
+                      <Building2 className="size-10 text-muted-foreground/20 mx-auto mb-4" />
+                      <p className="text-xs text-muted-foreground italic">Clique para ver inventário de imóveis e empresas.</p>
+                   </Link>
+                </div>
+             )}
+
+             {activeTab === "tours" && (
+                <div className="space-y-4">
+                   <div className="flex items-center justify-between px-1">
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50">Histórico de Atividades</h4>
+                      <Link to="/tours" className="text-[10px] font-black text-primary uppercase">Todas Turnês</Link>
+                   </div>
+                   <div className="p-12 rounded-[2.5rem] bg-card/40 border border-dashed border-white/10 text-center">
+                      <Mic2 className="size-8 text-muted-foreground/10 mx-auto mb-3" />
+                      <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Sem turnês recentes</p>
+                   </div>
+                </div>
+             )}
           </div>
         </section>
 
-        <section>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-extrabold">Álbuns</h2>
-            <Link
-              to="/acoes/album"
-              search={{ nome: artist.nome }}
-              className="text-xs font-bold text-primary"
-            >
-              + Lançar
-            </Link>
-          </div>
-          {albuns.length === 0 ? (
-            <p className="text-xs text-muted-foreground">Nenhum álbum lançado ainda.</p>
-          ) : (
-            <div className="grid grid-cols-3 gap-2">
-              {albuns.map((a) => (
-                <Link key={a.id} to="/album/$id" params={{ id: a.id! }} className="group">
-                  <div className="aspect-square rounded-lg overflow-hidden bg-secondary">
-                    {a.capa_url && (
-                      <img
-                        src={driveImg(a.capa_url, 300)}
-                        alt={a.titulo}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                        loading="lazy"
-                      />
-                    )}
-                  </div>
-                  <p className="mt-1 text-xs font-bold truncate">{a.titulo}</p>
-                </Link>
-              ))}
-            </div>
-          )}
+        {/* Albuns Section */}
+        <section className="pt-4 border-t border-white/5">
+           <div className="flex items-center justify-between mb-5 px-1">
+             <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Discografia Oficial</h2>
+             <Link to="/acoes/album" search={{ nome: artist.nome }} className="size-10 rounded-xl bg-primary/10 text-primary grid place-items-center active:scale-90 transition-transform">
+                <Disc3 className="size-5" />
+             </Link>
+           </div>
+           
+           {albuns.length === 0 ? (
+             <div className="p-8 rounded-[2.5rem] border border-dashed border-white/5 text-center">
+                <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest italic opacity-40">Nenhum álbum registrado ainda</p>
+             </div>
+           ) : (
+             <div className="grid grid-cols-3 gap-4">
+               {albuns.map((a) => (
+                 <Link key={a.id} to="/album/$id" params={{ id: a.id! }} className="group">
+                   <div className="aspect-square rounded-[2rem] overflow-hidden bg-secondary shadow-lg border border-white/5">
+                     {a.capa_url && (
+                       <img
+                         src={driveImg(a.capa_url, 300)}
+                         alt={a.titulo}
+                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 grayscale group-hover:grayscale-0"
+                         loading="lazy"
+                       />
+                     )}
+                   </div>
+                   <p className="mt-2 text-[10px] font-black uppercase tracking-tight text-center truncate">{a.titulo}</p>
+                 </Link>
+               ))}
+             </div>
+           )}
         </section>
       </div>
+
+      {/* Modais existentes mantidos abaixo... */}
 
       {modal === "viral" && <ViralModal nome={artist.nome} onClose={() => setModal(null)} />}
       {modal === "filantropia" && (
@@ -237,130 +259,90 @@ function ArtistDashboard() {
   );
 }
 
-function StatCard({
-  icon,
-  label,
-  value,
-  bar,
-  barColor,
-  accent,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  bar?: number;
-  barColor?: string;
-  accent?: boolean;
-}) {
+function StatCardV2({ label, value, icon, accent }: any) {
   return (
-    <div
-      className={`p-4 rounded-xl ${accent ? "bg-primary/10 border border-primary/30" : "bg-card"}`}
-    >
-      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold text-muted-foreground">
-        {icon}
-        {label}
-      </div>
-      <p className={`text-lg font-black mt-1 truncate ${accent ? "text-primary" : ""}`}>{value}</p>
-      {bar !== undefined && (
-        <div className="h-1.5 mt-2 rounded-full bg-secondary overflow-hidden">
-          <div
-            className="h-full rounded-full transition-all"
-            style={{
-              width: `${Math.min(100, bar)}%`,
-              backgroundColor: barColor || "var(--primary)",
-            }}
-          />
-        </div>
-      )}
+    <div className={`p-4 rounded-[1.5rem] border transition-all duration-300 shadow-lg ${
+      accent ? "bg-primary/10 border-primary/30 shadow-primary/5" : "bg-white/5 backdrop-blur-xl border-white/10"
+    }`}>
+       <div className="flex items-center gap-2 mb-2 text-muted-foreground/70">
+          <div className={`size-7 rounded-lg grid place-items-center ${accent ? "bg-primary/20 text-primary" : "bg-white/10 text-white/50"}`}>
+             {icon}
+          </div>
+          <span className="text-[9px] font-black uppercase tracking-[0.15em] truncate">{label}</span>
+       </div>
+       <p className={`text-base font-black italic tracking-tighter truncate ${accent ? "text-primary" : "text-foreground"}`}>
+         {value}
+       </p>
     </div>
   );
 }
 
-function ActionLink({
-  to,
-  params,
-  icon,
-  label,
-}: {
-  to: string;
-  params: { nome: string };
-  icon: React.ReactNode;
-  label: string;
-}) {
+function StatCompact({ label, value, max, icon, color, reverse }: any) {
+  const percent = Math.min(100, (value / max) * 100);
   return (
-    <Link
-      to={to as "/acoes/tour"} // cast to one of the possible routes
+    <div className="p-4 rounded-[1.8rem] bg-white/5 backdrop-blur-md border border-white/10 flex items-center gap-4">
+       <div className={`size-10 rounded-xl bg-white/5 grid place-items-center shadow-inner shrink-0 ${color}`}>{icon}</div>
+       <div className="flex-1 min-w-0">
+          <div className="flex justify-between items-end mb-2">
+             <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 truncate mr-1">{label}</span>
+             <span className="text-xs font-black tracking-tighter shrink-0">{value} <span className="opacity-30">/ {max}</span></span>
+          </div>
+          <div className="h-2 bg-white/10 rounded-full overflow-hidden p-[1px]">
+             <div 
+               className={`h-full rounded-full transition-all duration-1000 shadow-[0_0_8px_rgba(var(--primary),0.2)] ${
+                 reverse ? (percent > 80 ? 'bg-rose-500' : 'bg-primary') : 'bg-primary'
+               }`} 
+               style={{ width: `${percent}%` }} 
+             />
+          </div>
+       </div>
+    </div>
+  );
+}
+
+function QuickAction({ icon, label, to, params, id }: any) {
+  return (
+    <Link 
+      id={id}
+      to={to} 
       search={params}
-      className="flex items-center gap-3 p-3 rounded-xl bg-card hover:bg-secondary transition-colors"
+      className="flex flex-col items-center justify-center gap-3 p-5 rounded-[2rem] bg-white/5 backdrop-blur-xl border border-white/10 transition-all hover:bg-primary/10 hover:border-primary/30 active:scale-95 group shadow-lg"
     >
-      <div className="size-10 rounded-lg bg-primary/15 text-primary grid place-items-center">
-        {icon}
-      </div>
-      <span className="font-bold text-sm">{label}</span>
+       <div className="size-14 rounded-[1.5rem] bg-white/5 grid place-items-center group-hover:bg-primary/20 transition-all shadow-inner text-muted-foreground group-hover:text-primary group-hover:rotate-12">
+          {icon}
+       </div>
+       <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground group-hover:text-foreground text-center leading-none">{label}</span>
     </Link>
   );
 }
-function ActionButton({
-  onClick,
-  icon,
-  label,
-}: {
-  onClick: () => void;
-  icon: React.ReactNode;
-  label: string;
-}) {
+
+function TabButton({ active, onClick, children }: any) {
   return (
-    <button
+    <button 
       onClick={onClick}
-      className="flex items-center gap-3 p-3 rounded-xl bg-card hover:bg-secondary transition-colors text-left"
+      className={`flex-1 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500 ${
+        active 
+          ? "bg-primary text-primary-foreground shadow-2xl shadow-primary/30 scale-[1.02] z-10" 
+          : "text-muted-foreground hover:bg-white/5 hover:text-white/60"
+      }`}
     >
-      <div className="size-10 rounded-lg bg-primary/15 text-primary grid place-items-center">
-        {icon}
-      </div>
-      <span className="font-bold text-sm">{label}</span>
+       {children}
     </button>
   );
 }
-function ProjectsLink({ nome }: { nome: string }) {
-  return (
-    <Link
-      to="/artistas/$nome/projetos"
-      params={{ nome }}
-      className="flex items-center gap-3 p-3 rounded-xl bg-card hover:bg-secondary transition-colors"
-    >
-      <div className="size-10 rounded-lg bg-primary/15 text-primary grid place-items-center">
-        <Briefcase className="size-5" />
-      </div>
-      <span className="font-bold text-sm">Projetos</span>
-    </Link>
+
+function MiniAction({ label, icon, onClick, to, color }: any) {
+  const Content = (
+    <>
+       <div className={`size-10 rounded-xl bg-white/5 grid place-items-center ${color}`}>{icon}</div>
+       <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex-1 text-center">{label}</span>
+    </>
   );
-}
-function BensLink({ nome }: { nome: string }) {
-  return (
-    <Link
-      to="/artistas/$nome/bens"
-      params={{ nome }}
-      className="flex items-center gap-3 p-3 rounded-xl bg-card hover:bg-secondary transition-colors"
-    >
-      <div className="size-10 rounded-lg bg-primary/15 text-primary grid place-items-center">
-        <Building2 className="size-5" />
-      </div>
-      <span className="font-bold text-sm">Meus Bens</span>
-    </Link>
-  );
-}
-function MarketLink() {
-  return (
-    <Link
-      to="/market"
-      className="flex items-center gap-3 p-3 rounded-xl bg-card hover:bg-secondary transition-colors"
-    >
-      <div className="size-10 rounded-lg bg-primary/15 text-primary grid place-items-center">
-        <ShoppingBag className="size-5" />
-      </div>
-      <span className="font-bold text-sm">Empire Market</span>
-    </Link>
-  );
+
+  const cls = "flex items-center gap-3 p-3 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-all active:scale-[0.98]";
+
+  if (to) return <Link to={to} className={cls}>{Content}</Link>;
+  return <button onClick={onClick} className={cls}>{Content}</button>;
 }
 
 function Modal({

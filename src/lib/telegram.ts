@@ -18,6 +18,8 @@ declare global {
 export interface TgUser {
   id: string;
   name?: string;
+  username?: string;
+  photo_url?: string;
   isTest: boolean;
 }
 
@@ -77,8 +79,8 @@ export function useTelegramUser(): {
       console.log("Usuário detectado via URL:", urlId);
       const newUser = {
         id: urlId,
-        name: nameFromUrl || "Usuário",
-        isTest: urlId.startsWith("test"),
+        name: nameFromUrl || "Usuário #" + urlId.slice(-4),
+        isTest: true,
       };
       setUser(newUser);
       localStorage.setItem("tg_user_cache", JSON.stringify(newUser));
@@ -97,9 +99,11 @@ export function useTelegramUser(): {
       
       if (sdkUser) {
         console.log("Usuário detectado pelo SDK:", sdkUser.id);
-        const newUser = {
+        const newUser: TgUser = {
           id: String(sdkUser.id),
           name: sdkUser.first_name || sdkUser.username || "Usuário",
+          username: sdkUser.username,
+          photo_url: (sdkUser as any).photo_url,
           isTest: false,
         };
         setUser(newUser);

@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Library } from "lucide-react";
 import { useTelegramUser } from "@/lib/telegram";
 import { api, fmtEC, driveImg, type Artist } from "@/lib/api";
 
@@ -34,12 +34,12 @@ function ArtistasList() {
 
   return (
     <main className="flex-1 mx-auto w-full max-w-2xl px-4 pt-6">
-      <header className="mb-6">
-        <p className="text-[10px] uppercase tracking-[0.2em] text-primary/70 font-black mb-1">
-          {filter === "all" ? "Indústria Imperial" : "Catalogação de Talentos"}
+      <header className="mb-4">
+        <p className="text-[8px] uppercase tracking-[0.2em] text-primary/70 font-black mb-1">
+          {filter === "all" ? "A Indústria" : "Seu Plantel"}
         </p>
-        <h1 className="text-3xl font-black tracking-tight">
-          {filter === "all" ? "Empire Industry" : "Empire Artists"}
+        <h1 className="text-xl font-black tracking-tighter uppercase italic">
+          {filter === "all" ? "Empire Artists" : "Meus Artistas"}
         </h1>
       </header>
       {!user && ready && (
@@ -52,9 +52,36 @@ function ArtistasList() {
           ))}
         </div>
       ) : artists.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-16 text-center italic">
-          {filter === "all" ? "Nenhuma lenda registrada no império." : "Nenhuma lenda sob seu comando ainda."}
-        </p>
+        <div className="space-y-6 flex flex-col items-center justify-center py-16 text-center">
+          <div className="size-20 rounded-full bg-white/5 grid place-items-center mb-2">
+            <Library className="size-10 text-muted-foreground/20" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-muted-foreground italic">
+              {filter === "all" ? "Nenhuma lenda registrada no império." : "Nenhuma lenda sob seu comando ainda."}
+            </p>
+            {filter !== "all" && (
+              <p className="text-[10px] text-muted-foreground/60 uppercase tracking-widest mt-1">Conecte seu ID do Telegram para gerenciar artistas vinculados.</p>
+            )}
+          </div>
+          
+          {filter !== "all" && (
+            <div className="w-full max-w-xs space-y-3 pt-4">
+               <button 
+                onClick={() => (window as any).setShowLinkModal?.(true)}
+                className="w-full py-5 rounded-[2rem] bg-primary text-primary-foreground font-black uppercase tracking-widest shadow-[0_10px_30px_rgba(var(--primary-rgb),0.3)] active:scale-95 transition-all text-xs"
+              >
+                Vincular meu Artista
+              </button>
+              <button 
+                onClick={() => (window as any).setShowIdModal?.(true)}
+                className="w-full py-5 rounded-[2rem] bg-white/5 border border-white/10 text-white font-black uppercase tracking-widest active:scale-95 transition-all text-[10px]"
+              >
+                Inserir ID Manualmente
+              </button>
+            </div>
+          )}
+        </div>
       ) : (
         <ul className="space-y-4">
           {[...artists]
@@ -96,35 +123,35 @@ function ArtistasList() {
                         <div className="flex-1 min-w-0 flex flex-col pt-1">
                           <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                             {generoVal && (
-                              <span className="text-[9px] font-black uppercase tracking-widest bg-primary/20 text-primary px-2.5 py-1 rounded-md border border-primary/30 shadow-sm">
+                              <span className="text-[8px] font-black uppercase tracking-widest bg-primary/20 text-primary px-2 py-0.5 rounded border border-primary/30 shadow-sm">
                                 {generoVal}
                               </span>
                             )}
                             {paisVal && (
-                              <span className="text-[9px] font-bold text-white/90 uppercase tracking-tight bg-white/10 px-2.5 py-1 rounded-md border border-white/10 shadow-sm backdrop-blur-md flex items-center gap-1">
+                              <span className="text-[8px] font-bold text-white/90 uppercase tracking-tight bg-white/10 px-2 py-0.5 rounded border border-white/10 shadow-sm backdrop-blur-md flex items-center gap-1">
                                 <span className="opacity-50">📍</span> {paisVal}
                               </span>
                             )}
                           </div>
                           
-                          <h3 className="text-xl font-black italic uppercase tracking-tighter leading-tight text-white mb-1 group-hover:text-primary transition-colors">
+                          <h3 className="text-base font-black italic uppercase tracking-tighter leading-tight text-white mb-1 group-hover:text-primary transition-colors truncate">
                             {a.nome}
                           </h3>
 
-                          <div className="flex items-center gap-3 mb-2">
-                             <div className="flex flex-col">
-                               <span className="text-[8px] text-muted-foreground uppercase font-bold tracking-wider">Fortuna</span>
-                               <span className="text-[10px] font-black text-emerald-400">{fmtEC(a.fortuna_total)}</span>
+                          <div className="flex items-center gap-4 mb-2">
+                             <div className="flex flex-col min-w-0">
+                               <span className="text-[10px] text-muted-foreground uppercase font-black tracking-wider">Fortuna</span>
+                               <span className="text-xs font-black text-emerald-400 truncate">{fmtEC(a.fortuna_total)}</span>
                              </div>
-                             <div className="w-[1px] h-6 bg-white/5" />
-                             <div className="flex flex-col">
-                               <span className="text-[8px] text-muted-foreground uppercase font-bold tracking-wider">Prestígio</span>
-                               <span className="text-[10px] font-black text-amber-400">{a.prestigio.toLocaleString('pt-BR')} pts</span>
+                             <div className="w-[1px] h-6 bg-white/10" />
+                             <div className="flex flex-col min-w-0">
+                               <span className="text-[10px] text-muted-foreground uppercase font-black tracking-wider">Prestígio</span>
+                               <span className="text-xs font-black text-amber-400 truncate">{a.prestigio.toLocaleString('pt-BR')} pts</span>
                              </div>
                           </div>
 
                           {hasDescription && (
-                            <p className="text-[10px] text-muted-foreground leading-tight italic line-clamp-3 opacity-80 border-t border-white/5 pt-2">
+                            <p className="text-xs text-muted-foreground/90 leading-relaxed italic line-clamp-2 border-t border-white/10 pt-2">
                               {a.descricao}
                             </p>
                           )}
@@ -151,8 +178,8 @@ function ArtistasList() {
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-black text-lg tracking-tight truncate">{a.nome}</p>
-                      <p className="text-[10px] font-black text-primary uppercase tracking-widest">
+                      <p className="font-black text-sm tracking-tight truncate">{a.nome}</p>
+                      <p className="text-[8px] font-black text-primary uppercase tracking-widest truncate">
                         {fmtEC(a.saldo)} <span className="text-muted-foreground/40 mx-1">•</span> {a.gravadora}
                       </p>
                     </div>

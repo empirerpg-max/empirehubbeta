@@ -19,7 +19,7 @@ function RadarPage() {
         <Radio className="size-7 text-primary" />
         <div>
           <p className="text-xs uppercase tracking-widest text-muted-foreground font-bold">Feed</p>
-          <h1 className="text-3xl font-extrabold">Radar</h1>
+          <h1 className="text-xl font-extrabold">Radar</h1>
         </div>
       </header>
       {items === null ? (

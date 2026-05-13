@@ -19,40 +19,35 @@ export function PlaylistEditor({ existing }: { existing?: PlaylistPayload }) {
   const [capa, setCapa] = useState(existing?.capa_url || "");
   const [owner, setOwner] = useState(existing?.owner || "");
   const [tracks, setTracks] = useState<PlaylistTrack[]>(existing?.tracks || []);
-  const [albums, setAlbums] = useState<AlbumPayload[] | null>(null);
+  const [catalog, setCatalog] = useState<any[] | null>(null);
   const [q, setQ] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    api.listarAlbuns().then(setAlbums);
+    api.listarFaixasCatalogo().then(setCatalog);
   }, []);
 
-  const allTracks = useMemo(() => {
-    if (!albums) return [];
-    const out: PlaylistTrack[] = [];
-    for (const a of albums) {
-      for (const f of a.faixas || []) {
-        out.push({
-          album_id: a.id || "",
-          faixa_numero: f.numero,
-          titulo: f.titulo,
-          artistas: f.artistas,
-          drive_url: f.drive_url,
-          capa_url: a.capa_url,
-          duracao: f.duracao,
-        });
-      }
-    }
-    return out;
-  }, [albums]);
+  const filtered = useMemo(() => {
+    if (!catalog) return [];
+    const term = q.toLowerCase();
+    return catalog
+      .filter((t) => 
+        String(t.titulo).toLowerCase().includes(term) || 
+        String(t.artistas).toLowerCase().includes(term)
+      )
+      .slice(0, 50);
+  }, [catalog, q]);
 
-  const filtered = q
-    ? allTracks.filter((t) => `${t.titulo} ${t.artistas}`.toLowerCase().includes(q.toLowerCase()))
-    : allTracks.slice(0, 30);
-
-  function add(t: PlaylistTrack) {
-    if (tracks.some((x) => x.album_id === t.album_id && x.faixa_numero === t.faixa_numero)) return;
-    setTracks((prev) => [...prev, t]);
+  function add(t: any) {
+    if (tracks.some((x) => x.album_id === t.album_id && x.faixa_numero === t.numero)) return;
+    setTracks((prev) => [...prev, {
+      album_id: t.album_id,
+      faixa_numero: t.numero,
+      titulo: t.titulo,
+      artistas: t.artistas,
+      drive_url: t.drive_url,
+      capa_url: t.capa_url || ""
+    }]);
   }
   function rm(i: number) {
     setTracks((prev) => prev.filter((_, idx) => idx !== i));
@@ -80,7 +75,7 @@ export function PlaylistEditor({ existing }: { existing?: PlaylistPayload }) {
       tracks,
       data: existing?.data || new Date().toISOString().slice(0, 10),
     };
-    const r = await api.salvarPlaylist(payload);
+    const r = await api.salvarPlaylist(payload, user?.id);
     setSubmitting(false);
     const { ok } = notify(r as Record<string, unknown>, {
       successFallback: existing ? "Playlist atualizada!" : "Playlist criada!",
@@ -191,21 +186,19 @@ export function PlaylistEditor({ existing }: { existing?: PlaylistPayload }) {
             className="w-full bg-card border border-border rounded-xl pl-9 pr-3 py-2.5 text-sm"
           />
         </div>
-        {albums === null ? (
+        {catalog === null ? (
           <div className="h-24 rounded-xl bg-card animate-pulse" />
         ) : (
           <ul className="space-y-1 max-h-80 overflow-y-auto">
             {filtered.map((t, i) => (
               <li
-                key={`${t.album_id}-${t.faixa_numero}-${i}`}
+                key={`${t.album_id}-${t.numero}-${i}`}
                 className="flex items-center gap-2 p-2 rounded-lg bg-card hover:bg-secondary"
               >
-                {t.capa_url && (
-                  <img
-                    src={driveImg(t.capa_url, 80)}
-                    alt=""
-                    className="size-8 rounded object-cover"
-                  />
+                {t.drive_url && (
+                  <div className="size-8 rounded bg-primary/10 grid place-items-center">
+                    <ListMusic className="size-4 text-primary" />
+                  </div>
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-bold truncate">{t.titulo}</p>

@@ -29,40 +29,43 @@ function Gravadoras() {
 
   return (
     <main className="flex-1 mx-auto w-full max-w-2xl px-4 pt-6">
-      <header className="mb-5 flex items-center gap-3">
-        <Building2 className="size-7 text-primary" />
+      <header className="mb-6 flex items-center gap-4">
+        <Building2 className="size-10 text-primary" />
         <div>
-          <p className="text-xs uppercase tracking-widest text-muted-foreground font-bold">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-black">
             As majors
           </p>
-          <h1 className="text-3xl font-extrabold">Gravadoras</h1>
+          <h1 className="text-3xl font-black italic uppercase tracking-tighter">Gravadoras</h1>
         </div>
       </header>
       {data === null ? (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-16 rounded-xl bg-card animate-pulse" />
+            <div key={i} className="h-20 rounded-3xl bg-card animate-pulse" />
           ))}
         </div>
       ) : (
-        <ol className="space-y-2">
+        <ol className="space-y-3">
           {labels.map((g, i) => (
-            <li key={g.nome} className="flex items-center gap-3 p-3 rounded-xl bg-card">
+            <li key={g.nome} className="flex items-center gap-4 p-4 rounded-3xl bg-card border border-white/5 shadow-lg group hover:border-primary/20 transition-all">
               <span
-                className={`w-7 text-center font-black ${i < 3 ? "text-primary" : "text-muted-foreground"}`}
+                className={`w-8 text-center text-xl font-black italic ${i < 3 ? "text-primary scale-110" : "text-muted-foreground/30"}`}
               >
                 {i + 1}
               </span>
-              <div className="size-12 rounded-lg bg-primary/15 text-primary grid place-items-center font-black">
+              <div className="size-14 rounded-2xl bg-primary/10 text-primary grid place-items-center font-black text-lg shadow-inner group-hover:scale-105 transition-transform">
                 {g.nome.slice(0, 2).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-bold truncate">{g.nome}</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="font-black uppercase tracking-tight text-base truncate group-hover:text-primary transition-colors">{g.nome}</p>
+                <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-wider opacity-60">
                   {g.artistas} artista{g.artistas !== 1 && "s"} • {fmtMoney(g.fortuna)}
                 </p>
               </div>
-              <span className="font-black text-sm">{g.prestigio}</span>
+              <div className="text-right">
+                <span className="font-black text-xl italic tracking-tighter text-amber-400">{g.prestigio}</span>
+                <p className="text-[8px] font-black uppercase text-muted-foreground/30 tracking-[0.1em]">Pontos</p>
+              </div>
             </li>
           ))}
         </ol>

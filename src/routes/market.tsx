@@ -10,45 +10,58 @@ import {
   Briefcase,
   Sparkles,
   Plane,
+  PlusCircle,
+  Gem,
+  Megaphone,
 } from "lucide-react";
 import { useTelegramUser } from "@/lib/telegram";
-import { api, fmtEC, type MarketItem, type MuralItem, type Artist } from "@/lib/api";
+import { api, fmtEC, type MarketItem, type MuralItem, type Artist, driveImg } from "@/lib/api";
 import { notify } from "@/lib/notify";
 
 export const Route = createFileRoute("/market")({
   component: MarketPage,
 });
 
-const CAT_META: Record<string, { label: string; icon: React.ReactNode; gradient: string }> = {
+const CAT_META: Record<string, { label: string; icon: React.ReactNode; color: string; bgColor: string }> = {
   MARKET: {
-    label: "Boosts & Eventos",
+    label: "Boosts",
     icon: <Sparkles className="size-4" />,
-    gradient: "linear-gradient(135deg, oklch(0.55 0.2 280), oklch(0.4 0.15 280))",
+    color: "text-blue-500",
+    bgColor: "bg-blue-500/10",
   },
   IMOVEIS: {
     label: "Imóveis",
     icon: <Building2 className="size-4" />,
-    gradient: "linear-gradient(135deg, oklch(0.55 0.2 145), oklch(0.4 0.15 145))",
+    color: "text-emerald-500",
+    bgColor: "bg-emerald-500/10",
   },
   CARREIRA: {
     label: "Carreira",
     icon: <Briefcase className="size-4" />,
-    gradient: "linear-gradient(135deg, oklch(0.55 0.2 60), oklch(0.4 0.15 60))",
+    color: "text-amber-500",
+    bgColor: "bg-amber-500/10",
   },
   TOURS: {
     label: "Tours",
     icon: <Plane className="size-4" />,
-    gradient: "linear-gradient(135deg, oklch(0.55 0.2 30), oklch(0.4 0.15 30))",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
   },
   MURAL: {
-    label: "Composições",
+    label: "Música",
     icon: <Music className="size-4" />,
-    gradient: "linear-gradient(135deg, oklch(0.55 0.2 200), oklch(0.4 0.15 200))",
+    color: "text-purple-500",
+    bgColor: "bg-purple-500/10",
   },
+  SISTEMA: {
+    label: "Especial",
+    icon: <Gem className="size-4" />,
+    color: "text-rose-500",
+    bgColor: "bg-rose-500/10",
+  }
 };
 
-// Categorias do CONFIG_SISTEMA que viram catálogo de compra direta
-const VISIBLE_CATS = ["MARKET", "IMOVEIS", "CARREIRA"];
+const VISIBLE_CATS = ["MARKET", "IMOVEIS", "CARREIRA", "EXTRA"];
 
 function MarketPage() {
   const { user, ready } = useTelegramUser();
@@ -60,156 +73,190 @@ function MarketPage() {
   const [buying, setBuying] = useState<
     { kind: "market"; item: MarketItem } | { kind: "mural"; item: MuralItem } | null
   >(null);
+  const [isSelling, setIsSelling] = useState(false);
 
   useEffect(() => {
     api.listarMarket().then(setItems);
     api.listarMural().then(setMural);
   }, []);
+
   useEffect(() => {
     if (!ready || !user) return;
     api.meusArtistas(user.id).then(setArtists);
   }, [ready, user]);
 
   const cats = useMemo(() => {
-    if (!items) return VISIBLE_CATS;
-    const fromData = Array.from(new Set(items.map((i) => i.categoria))).filter((c) =>
-      VISIBLE_CATS.includes(c),
-    );
-    return fromData.length ? fromData : VISIBLE_CATS;
+    if (!items) return [];
+    const fromData = Array.from(new Set(items.map((i) => i.categoria)));
+    return fromData.sort();
   }, [items]);
 
   const filtered = useMemo(() => {
     if (!items) return [];
-    return (
-      items
-        .filter((i) => VISIBLE_CATS.includes(i.categoria))
-        .filter((i) => cat === "ALL" || i.categoria === cat)
-        // remove linhas-config que não são "compráveis" (preço < 1000 normalmente são taxas)
-        .filter((i) => i.preco >= 1000)
-    );
+    return items.filter((i) => cat === "ALL" || i.categoria === cat);
   }, [items, cat]);
 
   return (
-    <main className="flex-1 mx-auto w-full max-w-2xl">
-      <div
-        className="px-4 pt-4 pb-6"
-        style={{ background: "linear-gradient(180deg, oklch(0.32 0.16 280 / 0.55), transparent)" }}
-      >
-        <Link to="/" className="inline-flex items-center gap-1 text-foreground/80 mb-4">
-          <ChevronLeft className="size-5" />
+    <main className="flex-1 mx-auto w-full max-w-2xl px-4 pt-6 pb-24">
+      <header className="mb-8">
+        <Link to="/" className="inline-flex items-center gap-1 text-muted-foreground mb-4">
+           <ChevronLeft className="size-4" /> Voltar
         </Link>
-        <div className="flex items-center gap-3 mb-2">
-          <div className="size-12 rounded-xl bg-primary/15 text-primary grid place-items-center">
-            <ShoppingBag className="size-6" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="size-12 rounded-2xl bg-primary/15 text-primary grid place-items-center">
+              <ShoppingBag className="size-6" />
+            </div>
+            <div>
+              <p className="text-[10px] uppercase font-black tracking-widest text-primary">Império Market</p>
+              <h1 className="text-2xl font-black italic uppercase tracking-tighter">Marketplace</h1>
+            </div>
           </div>
-          <div>
-            <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
-              Mercado Imperial
-            </p>
-            <h1 className="text-2xl font-black">Empire Market</h1>
-          </div>
+          {tab === "mural" && (
+             <button 
+                onClick={() => setIsSelling(true)}
+                className="size-12 rounded-2xl bg-white/5 border border-white/10 grid place-items-center active:scale-95 transition-all text-primary"
+             >
+                <PlusCircle className="size-6" />
+             </button>
+          )}
         </div>
+      </header>
+
+      {/* Tabs Estilo App */}
+      <div className="flex p-1.5 bg-card rounded-3xl border border-white/5 mb-6">
+        <button
+          onClick={() => setTab("catalogo")}
+          className={`flex-1 py-3 rounded-[1.25rem] text-[10px] uppercase font-black tracking-widest transition-all ${
+            tab === "catalogo" ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "text-muted-foreground"
+          }`}
+        >
+          Catálogo Imperial
+        </button>
+        <button
+          onClick={() => setTab("mural")}
+          className={`flex-1 py-3 rounded-[1.25rem] text-[10px] uppercase font-black tracking-widest transition-all ${
+            tab === "mural" ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "text-muted-foreground"
+          }`}
+        >
+          Mural de Composições
+        </button>
       </div>
 
-      <div className="px-4 pb-6 space-y-4">
-        {/* Tabs */}
-        <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-card">
-          <TabBtn active={tab === "catalogo"} onClick={() => setTab("catalogo")}>
-            Catálogo
-          </TabBtn>
-          <TabBtn active={tab === "mural"} onClick={() => setTab("mural")}>
-            Composições
-          </TabBtn>
-        </div>
-
-        {tab === "catalogo" && (
-          <>
-            <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-1">
-              <CatChip active={cat === "ALL"} onClick={() => setCat("ALL")} label="Tudo" />
-              {cats.map((c) => (
-                <CatChip
+      {tab === "catalogo" && (
+        <>
+          {/* iFood Style Categories */}
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-4 px-4 mb-8">
+             <button
+               onClick={() => setCat("ALL")}
+               className={`shrink-0 h-24 w-20 rounded-[2rem] flex flex-col items-center justify-center gap-2 border transition-all ${
+                 cat === "ALL" ? "bg-primary border-primary text-primary-foreground shadow-xl shadow-primary/20" : "bg-card border-white/5 text-muted-foreground"
+               }`}
+             >
+               <div className={`size-10 rounded-full grid place-items-center ${cat === "ALL" ? "bg-white/20" : "bg-white/5"}`}>
+                 <ShoppingBag className="size-5" />
+               </div>
+               <span className="text-[10px] font-black uppercase tracking-tighter">Tudo</span>
+             </button>
+             {cats.map(c => (
+                <button
                   key={c}
-                  active={cat === c}
                   onClick={() => setCat(c)}
-                  label={CAT_META[c]?.label || c}
-                  icon={CAT_META[c]?.icon}
-                />
+                  className={`shrink-0 h-24 w-20 rounded-[2rem] flex flex-col items-center justify-center gap-2 border transition-all ${
+                    cat === c ? "bg-primary border-primary text-primary-foreground shadow-xl shadow-primary/20" : "bg-card border-white/5 text-muted-foreground"
+                  }`}
+                >
+                  <div className={`size-10 rounded-full grid place-items-center ${cat === c ? "bg-white/20" : CAT_META[c]?.bgColor || "bg-white/5"}`}>
+                    {CAT_META[c]?.icon || <Gem className="size-5" />}
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-tighter truncate w-16 text-center">
+                    {CAT_META[c]?.label || c}
+                  </span>
+                </button>
+             ))}
+          </div>
+
+          {items === null ? (
+            <div className="grid grid-cols-1 gap-3">
+               {[1,2,3,4].map(i => <div key={i} className="h-28 rounded-3xl bg-card animate-pulse" />)}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3">
+              {filtered.map((it, i) => (
+                <button
+                  key={i}
+                  onClick={() => setBuying({ kind: "market", item: it })}
+                  className="flex items-center gap-4 p-4 rounded-3xl bg-card border border-white/5 transition-all hover:bg-white/[0.04] active:scale-[0.98] group text-left"
+                >
+                  <div className={`size-16 rounded-2xl shrink-0 grid place-items-center ${CAT_META[it.categoria]?.bgColor || "bg-secondary"}`}>
+                     <div className={CAT_META[it.categoria]?.color || "text-muted-foreground"}>
+                        {CAT_META[it.categoria]?.icon || <ShoppingBag className="size-6" />}
+                     </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[9px] uppercase font-black tracking-widest text-muted-foreground mb-0.5">{it.categoria}</p>
+                    <h3 className="font-black text-base truncate tracking-tight text-white mb-0.5">{it.item}</h3>
+                    <p className="text-[10px] text-muted-foreground font-medium truncate italic">{it.efeito || "Item disponível para aquisição no império."}</p>
+                  </div>
+                  <div className="text-right">
+                     <p className="text-xs font-black text-primary">{fmtEC(it.preco)}</p>
+                     <span className="text-[8px] font-black uppercase tracking-tighter text-muted-foreground/30">Custo Total</span>
+                  </div>
+                </button>
               ))}
             </div>
+          )}
+        </>
+      )}
 
-            {items === null ? (
-              <Skeleton h={300} />
-            ) : filtered.length === 0 ? (
-              <EmptyCard>Nenhum item disponível nessa categoria.</EmptyCard>
-            ) : (
-              <div className="grid grid-cols-2 gap-3">
-                {filtered.map((it, i) => (
-                  <button
-                    key={`${it.categoria}-${it.item}-${i}`}
-                    onClick={() => setBuying({ kind: "market", item: it })}
-                    className="text-left rounded-xl overflow-hidden bg-card hover:scale-[1.02] transition-transform"
-                  >
-                    <div
-                      className="aspect-video grid place-items-center text-white"
-                      style={{
-                        background:
-                          CAT_META[it.categoria]?.gradient || "linear-gradient(135deg, #555, #222)",
-                      }}
-                    >
-                      <div className="size-12 rounded-full bg-white/15 grid place-items-center backdrop-blur">
-                        {CAT_META[it.categoria]?.icon || <ShoppingBag className="size-5" />}
-                      </div>
-                    </div>
-                    <div className="p-3">
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">
-                        {CAT_META[it.categoria]?.label || it.categoria}
-                      </p>
-                      <p className="font-extrabold text-sm leading-tight mt-0.5 line-clamp-2">
-                        {it.item}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{it.efeito}</p>
-                      <p className="text-sm font-black text-primary mt-2">{fmtEC(it.preco)}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </>
-        )}
+      {tab === "mural" && (
+        <div className="space-y-4">
+          <div className="p-5 rounded-3xl bg-primary/5 border border-primary/10 flex items-center gap-4">
+             <Megaphone className="size-6 text-primary shrink-0" />
+             <p className="text-xs font-medium text-muted-foreground leading-relaxed">
+               Composições exclusivas prontas para o seu próximo hit. Compre o direito total e lance seu novo single.
+             </p>
+          </div>
 
-        {tab === "mural" && (
-          <>
-            {mural === null ? (
-              <Skeleton h={200} />
-            ) : mural.length === 0 ? (
-              <EmptyCard>Nenhuma composição à venda no momento.</EmptyCard>
-            ) : (
-              <div className="space-y-2">
+          {mural === null ? (
+             <div className="grid grid-cols-1 gap-3">
+                {[1,2,3].map(i => <div key={i} className="h-32 rounded-3xl bg-card animate-pulse" />)}
+             </div>
+          ) : mural.length === 0 ? (
+             <EmptyCard>O mural está limpo hoje. Seja o primeiro a vender sua obra.</EmptyCard>
+          ) : (
+             <div className="grid grid-cols-1 gap-3">
                 {mural.map((m) => (
-                  <button
-                    key={m.id}
-                    onClick={() => setBuying({ kind: "mural", item: m })}
-                    className="w-full text-left p-4 rounded-xl bg-card hover:bg-secondary transition-colors"
-                  >
-                    <div className="flex items-center justify-between gap-3 mb-1">
-                      <p className="font-extrabold text-sm">{m.titulo}</p>
-                      <span className="text-sm font-black text-primary shrink-0">
-                        {fmtEC(m.preco)}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">por {m.vendedor}</p>
-                    {m.teaser && (
-                      <p className="text-xs mt-2 line-clamp-2 italic text-foreground/80">
-                        "{m.teaser}"
-                      </p>
-                    )}
-                  </button>
+                   <button
+                     key={m.id}
+                     onClick={() => setBuying({ kind: "mural", item: m })}
+                     className="w-full relative overflow-hidden p-5 rounded-[2.5rem] bg-card border border-white/5 transition-all hover:bg-white/[0.04] text-left group"
+                   >
+                     <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-20 transition-opacity">
+                        <Music className="size-20" />
+                     </div>
+                     <div className="relative z-10">
+                        <div className="flex justify-between items-start mb-3">
+                           <div>
+                              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-1">Composição Premium</p>
+                              <h3 className="text-xl font-black italic uppercase tracking-tighter">{m.titulo}</h3>
+                           </div>
+                           <p className="text-sm font-black bg-white/5 px-3 py-1.5 rounded-xl border border-white/5">{fmtEC(m.preco)}</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground font-medium mb-4 italic">"{m.teaser || "Uma obra prima aguardando sua voz..."}"</p>
+                        <div className="flex items-center gap-2 pt-4 border-t border-white/5">
+                           <div className="size-6 rounded-full bg-secondary overflow-hidden">
+                              <img src="https://images.unsplash.com/photo-1514525253361-bee8718a300c?w=100&h=100&fit=crop" className="w-full h-full object-cover" />
+                           </div>
+                           <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Vendedor: {m.vendedor}</span>
+                        </div>
+                     </div>
+                   </button>
                 ))}
-              </div>
-            )}
-          </>
-        )}
-      </div>
+             </div>
+          )}
+        </div>
+      )}
 
       {buying && (
         <BuyModal
@@ -218,7 +265,17 @@ function MarketPage() {
           onClose={() => setBuying(null)}
           onSuccess={() => {
             setBuying(null);
-            // refresh
+            api.listarMural().then(setMural);
+          }}
+        />
+      )}
+
+      {isSelling && (
+        <SellModal 
+          artists={artists} 
+          onClose={() => setIsSelling(false)} 
+          onSuccess={() => {
+            setIsSelling(false);
             api.listarMural().then(setMural);
           }}
         />
@@ -227,149 +284,152 @@ function MarketPage() {
   );
 }
 
-function TabBtn({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
+// --- Modais ---
+function BuyModal({ buying, artists, onClose, onSuccess }: any) {
+  const [nome, setNome] = useState(artists[0]?.nome || "");
+  const [submitting, setSubmitting] = useState(false);
+  const it = buying.item;
+  const preco = it.preco;
+  const artist = artists.find((a: any) => a.nome === nome);
+  const pode = artist ? artist.saldo >= preco : false;
+
+  const go = async () => {
+    setSubmitting(true);
+    const r = buying.kind === "market" 
+      ? await api.comprarMarket({ nome, categoria: it.categoria, item: it.item })
+      : await api.comprarMural({ nome, id: it.id });
+    notify(r, { successFallback: "Transação Imperial confirmada!" });
+    setSubmitting(false);
+    if (!r.erro) onSuccess();
+  };
+
   return (
-    <button
-      onClick={onClick}
-      className={`py-2 rounded-lg text-sm font-extrabold uppercase tracking-wider transition-colors ${active ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
-    >
-      {children}
-    </button>
-  );
-}
-function CatChip({
-  active,
-  onClick,
-  label,
-  icon,
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-  icon?: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-colors ${active ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
-    >
-      {icon} {label}
-    </button>
-  );
-}
-function Skeleton({ h }: { h: number }) {
-  return <div className="rounded-xl bg-card animate-pulse" style={{ height: h }} />;
-}
-function EmptyCard({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="rounded-xl bg-card p-6 text-center text-sm text-muted-foreground">
-      {children}
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-md p-4" onClick={onClose}>
+      <div className="w-full max-w-sm bg-card border border-white/10 rounded-[2.5rem] p-6 shadow-2xl animate-in fade-in slide-in-from-bottom-8 duration-500" onClick={e => e.stopPropagation()}>
+         <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-black italic uppercase tracking-tighter">Confirmar Compra</h3>
+            <button onClick={onClose} className="size-8 rounded-full bg-white/5 grid place-items-center opacity-50 hover:opacity-100">
+               <X className="size-4" />
+            </button>
+         </div>
+
+         <div className="p-5 rounded-3xl bg-secondary/50 border border-white/5 mb-6">
+            <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mb-1">
+               {buying.kind === "market" ? it.categoria : "Mural de Composições"}
+            </p>
+            <h4 className="text-lg font-black tracking-tight mb-2">{buying.kind === "market" ? it.item : it.titulo}</h4>
+            <p className="text-2xl font-black text-primary">{fmtEC(preco)}</p>
+         </div>
+
+         <div className="space-y-4">
+            <div>
+               <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mb-2 block px-1">Comprar com</label>
+               <select 
+                 value={nome}
+                 onChange={e => setNome(e.target.value)}
+                 className="w-full bg-background border border-white/10 rounded-2xl px-4 py-3.5 text-xs font-black outline-none focus:border-primary transition-all"
+               >
+                  {artists.map((a: any) => (
+                    <option key={a.nome} value={a.nome}>{a.nome} ({fmtEC(a.saldo)})</option>
+                  ))}
+               </select>
+            </div>
+
+            {artist && !pode && (
+               <p className="text-[10px] font-bold text-destructive px-1 uppercase tracking-tighter">Empire Coin insuficiente para esta transação.</p>
+            )}
+
+            <button
+               onClick={go}
+               disabled={submitting || !pode}
+               className="w-full py-5 rounded-[2rem] bg-primary text-primary-foreground font-black uppercase text-xs tracking-widest shadow-xl shadow-primary/30 disabled:opacity-30 flex items-center justify-center gap-3 transition-all active:scale-95"
+            >
+               {submitting ? <Loader2 className="size-5 animate-spin" /> : "Confirmar e Pagar"}
+            </button>
+         </div>
+      </div>
     </div>
   );
 }
 
-function BuyModal({
-  buying,
-  artists,
-  onClose,
-  onSuccess,
-}: {
-  buying: { kind: "market"; item: MarketItem } | { kind: "mural"; item: MuralItem };
-  artists: Artist[];
-  onClose: () => void;
-  onSuccess: () => void;
-}) {
-  const [nome, setNome] = useState<string>(artists[0]?.nome || "");
+function SellModal({ artists, onClose, onSuccess }: any) {
+  const [nome, setNome] = useState(artists[0]?.nome || "");
+  const [titulo, setTitulo] = useState("");
+  const [preco, setPreco] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const titulo = buying.kind === "market" ? buying.item.item : buying.item.titulo;
-  const preco = buying.kind === "market" ? buying.item.preco : buying.item.preco;
-  const sub = buying.kind === "market" ? buying.item.efeito : `por ${buying.item.vendedor}`;
-
-  const artist = artists.find((a) => a.nome === nome);
-  const podeComprar = artist ? artist.saldo >= preco : false;
-
-  async function go() {
-    if (!nome) return;
+  const go = async (e: any) => {
+    e.preventDefault();
     setSubmitting(true);
-    const r = (
-      buying.kind === "market"
-        ? await api.comprarMarket({
-            nome,
-            categoria: buying.item.categoria,
-            item: buying.item.item,
-          })
-        : await api.comprarMural({ nome, id: buying.item.id })
-    ) as string;
-    const { ok } = notify(r, { successFallback: "Compra confirmada!" });
+    const r = await api.venderComposicao({ nome, titulo, preco: parseFloat(preco) });
+    notify(r, { successFallback: "Obra publicada no mural!" });
     setSubmitting(false);
-    if (ok) onSuccess();
-  }
+    if (!r.erro) onSuccess();
+  };
 
   return (
-    <div
-      onClick={onClose}
-      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm grid place-items-end sm:place-items-center p-0 sm:p-4"
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md bg-card rounded-t-2xl sm:rounded-2xl p-5 border border-border"
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-extrabold">Comprar item</h3>
-          <button
-            onClick={onClose}
-            className="size-8 rounded-full bg-secondary grid place-items-center"
-          >
-            <X className="size-4" />
-          </button>
-        </div>
-        <div className="p-4 rounded-xl bg-background mb-4">
-          <p className="font-extrabold text-base">{titulo}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>
-          <p className="text-xl font-black text-primary mt-2">{fmtEC(preco)}</p>
-        </div>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-md p-4" onClick={onClose}>
+      <form className="w-full max-w-sm bg-card border border-white/10 rounded-[2.5rem] p-6 shadow-2xl animate-in fade-in slide-in-from-bottom-8 duration-500" onClick={e => e.stopPropagation()} onSubmit={go}>
+         <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-black italic uppercase tracking-tighter">Vender Composição</h3>
+            <button type="button" onClick={onClose} className="size-8 rounded-full bg-white/5 grid place-items-center opacity-50 hover:opacity-100">
+               <X className="size-4" />
+            </button>
+         </div>
 
-        <label className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
-          Comprar com
-        </label>
-        {artists.length === 0 ? (
-          <p className="text-sm text-muted-foreground mt-1">Você não gerencia nenhum artista.</p>
-        ) : (
-          <select
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            className="w-full bg-background border border-border rounded-xl px-3 py-3 text-sm mt-1 mb-2"
-          >
-            {artists.map((a) => (
-              <option key={a.nome} value={a.nome}>
-                {a.nome} — {fmtEC(a.saldo)}
-              </option>
-            ))}
-          </select>
-        )}
-        {artist && !podeComprar && (
-          <p className="text-xs text-destructive mb-2">
-            Saldo insuficiente. Falta {fmtEC(preco - artist.saldo)}.
-          </p>
-        )}
+         <div className="space-y-4">
+            <div>
+               <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mb-2 block px-1">Artista Vendedor</label>
+               <select 
+                 value={nome}
+                 onChange={e => setNome(e.target.value)}
+                 className="w-full bg-background border border-white/10 rounded-2xl px-4 py-3.5 text-xs font-black outline-none"
+               >
+                  {artists.map((a: any) => (
+                    <option key={a.nome} value={a.nome}>{a.nome}</option>
+                  ))}
+               </select>
+            </div>
+            <div>
+               <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mb-2 block px-1">Título da Obra</label>
+               <input 
+                 type="text"
+                 required
+                 value={titulo}
+                 onChange={e => setTitulo(e.target.value)}
+                 placeholder="Ex: Moonlight Shadow"
+                 className="w-full bg-background border border-white/10 rounded-2xl px-4 py-3.5 text-xs font-black outline-none"
+               />
+            </div>
+            <div>
+               <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mb-2 block px-1">Preço Sugerido (EC)</label>
+               <input 
+                 type="number"
+                 required
+                 value={preco}
+                 onChange={e => setPreco(e.target.value)}
+                 placeholder="Mínimo 50.000"
+                 className="w-full bg-background border border-white/10 rounded-2xl px-4 py-3.5 text-xs font-black outline-none"
+               />
+            </div>
 
-        <button
-          onClick={go}
-          disabled={submitting || !nome || !podeComprar}
-          className="w-full py-3 rounded-full bg-primary text-primary-foreground font-extrabold uppercase tracking-wider text-sm disabled:opacity-50 inline-flex items-center justify-center gap-2 mt-2"
-        >
-          {submitting && <Loader2 className="size-4 animate-spin" />} Confirmar compra
-        </button>
-      </div>
+            <button
+               type="submit"
+               disabled={submitting || !titulo || !preco}
+               className="w-full py-5 rounded-[2rem] bg-primary text-primary-foreground font-black uppercase text-xs tracking-widest shadow-xl shadow-primary/30 disabled:opacity-30 flex items-center justify-center gap-3 mt-4"
+            >
+               {submitting ? <Loader2 className="size-5 animate-spin" /> : "Publicar no Mural"}
+            </button>
+         </div>
+      </form>
+    </div>
+  );
+}
+
+function EmptyCard({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded-[2.5rem] bg-card/40 border border-dashed border-white/10 p-12 text-center text-xs text-muted-foreground italic">
+      {children}
     </div>
   );
 }

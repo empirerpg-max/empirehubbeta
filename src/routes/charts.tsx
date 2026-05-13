@@ -25,8 +25,8 @@ function Charts() {
     <main className="flex-1 mx-auto w-full max-w-2xl px-4 pt-6 pb-20">
       <header className="mb-6">
         <div className="flex items-center gap-3 mb-1">
-          <Crown className="size-8 text-primary" fill="currentColor" />
-          <h1 className="text-3xl font-black italic tracking-tighter uppercase">Empire Rankings</h1>
+          <Crown className="size-6 text-primary" fill="currentColor" />
+          <h1 className="text-2xl font-black italic tracking-tighter uppercase leading-none">Empire Rankings</h1>
         </div>
         <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest pl-1">
           O estado atual da soberania musical
@@ -37,7 +37,7 @@ function Charts() {
         {[
           { id: "prestigio" as const, label: "Prestígio", icon: <TrendingUp className="size-3" /> },
           { id: "fortuna" as const, label: "Fortuna", icon: <Crown className="size-3" /> },
-          { id: "saldo" as const, label: "$EC", icon: <User className="size-3" /> },
+          { id: "saldo" as const, label: "Empire Coin", icon: <User className="size-3" /> },
         ].map((t) => (
           <button
             key={t.id}
@@ -81,14 +81,14 @@ function Charts() {
                   <p className="text-[10px] font-bold text-muted-foreground">{a.gravadora}</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-black text-xs">
+                  <p className={`font-black ${tab === "prestigio" ? "text-[11px]" : "text-xs"}`}>
                     {tab === "prestigio"
                       ? `${a.prestigio}`
                       : tab === "fortuna"
                         ? fmtMoney(a.fortuna_total)
                         : `EC ${a.saldo.toLocaleString("pt-BR")}`}
                   </p>
-                  <p className="text-[8px] text-muted-foreground uppercase font-black">
+                  <p className="text-[7px] text-muted-foreground uppercase font-black">
                     {tab === "prestigio" ? "PONTOS" : "TOTAL"}
                   </p>
                 </div>

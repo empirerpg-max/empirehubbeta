@@ -32,7 +32,7 @@ function AlbunsPage() {
         <p className="text-[10px] uppercase tracking-[0.2em] text-primary/70 font-black mb-1">
           Produção Fonográfica
         </p>
-        <h1 className="text-3xl font-black tracking-tight">Empire Albums</h1>
+        <h1 className="text-xl font-black tracking-tight">Empire Albums</h1>
       </header>
       
       <div className="relative mb-6">

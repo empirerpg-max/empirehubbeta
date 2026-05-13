@@ -158,7 +158,7 @@ function DueloPage() {
             >
               <div className="size-24 sm:size-32 rounded-3xl overflow-hidden border-4 border-primary shadow-2xl relative">
                 <img
-                  src={p1 ? driveImg(p1.foto, 300) : ""}
+                  src={p1 ? (driveImg(p1.foto, 300) as string) : undefined}
                   className="w-full h-full object-cover"
                   alt=""
                 />
@@ -185,7 +185,7 @@ function DueloPage() {
             >
               <div className="size-24 sm:size-32 rounded-3xl overflow-hidden border-4 border-destructive shadow-2xl relative">
                 <img
-                  src={p2 ? driveImg(p2.foto, 300) : ""}
+                  src={p2 ? (driveImg(p2.foto, 300) as string) : undefined}
                   className="w-full h-full object-cover"
                   alt=""
                 />
