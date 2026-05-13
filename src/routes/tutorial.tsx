@@ -27,7 +27,7 @@ function TutorialPage() {
         </div>
         <h1 className="text-3xl font-black">Tutorial</h1>
         <p className="text-muted-foreground mt-2">
-          Aprenda a dominar o mundo artístico no Artistic Oasis.
+          Aprenda a dominar o mundo artístico no Empire Hub.
         </p>
       </header>
 

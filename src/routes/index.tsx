@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
@@ -18,21 +18,23 @@ import {
   Megaphone,
   HelpCircle,
   Gamepad2,
+  Disc3,
+  ListMusic,
+  RotateCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTelegramUser } from "@/lib/telegram";
-import { api, fmtEC, fmtMoney, driveImg, type Artist, type RadarItem } from "@/lib/api";
+import { api, fmtEC, fmtMoney, driveImg, type Artist, type RadarItem, invalidateCache } from "@/lib/api";
 
 export const Route = createFileRoute("/")({
   component: Index,
 });
 
 function Index() {
-  const { user, ready, setUserManually } = useTelegramUser();
+  const { user, ready } = useTelegramUser();
   const [artists, setArtists] = useState<Artist[] | null>(null);
   const [radar, setRadar] = useState<RadarItem[]>([]);
   const [greeting, setGreeting] = useState("");
-  const [manualId, setManualId] = useState("");
 
   useEffect(() => {
     const h = new Date().getHours();
@@ -50,7 +52,7 @@ function Index() {
         .then(setArtists)
         .catch((err) => {
           console.error("Erro ao carregar artistas:", err);
-          setArtists([]); // Fallback para lista vazia se falhar
+          setArtists([]);
           toast.error("Erro de conexão", {
             description: "Não foi possível carregar seus artistas.",
           });
@@ -64,128 +66,90 @@ function Index() {
       .catch(() => {});
   }, [ready, user]);
 
+  const handleSync = () => {
+    invalidateCache();
+    toast.success("Sincronizando...", {
+      description: "Buscando dados mais recentes do Império.",
+    });
+    // Trigger re-fetch
+    if (user && user.id !== "guest") {
+      api.meusArtistas(user.id).then(setArtists);
+    }
+    api.radar().then((r) => setRadar(r.slice(0, 6)));
+  };
+
   return (
     <main
-      className="flex-1 mx-auto w-full max-w-2xl px-4 pt-6"
+      className="flex-1 mx-auto w-full max-w-2xl px-4 pt-6 pb-12"
       style={{ background: "var(--gradient-hero)" }}
     >
+      {/* Filtro SVG para efeito Carvão/Sketch */}
+      <svg style={{ position: "absolute", width: 0, height: 0 }} aria-hidden="true">
+        <filter id="charcoal-filter">
+          <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="3" result="noise" />
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="2" />
+        </filter>
+      </svg>
+
       {/* Header */}
-      <header className="flex items-center justify-between mb-6">
+      <header className="flex items-center justify-between mb-8">
         <div>
           <p
-            className="text-xs uppercase tracking-widest text-muted-foreground font-bold group cursor-help"
-            onClick={() => {
-              const params = new URLSearchParams(window.location.search).toString();
-              toast.info("Debug Info", {
-                description: `ID: ${user?.id} | Name: ${user?.name}`,
-                action: {
-                  label: "Reset",
-                  onClick: () => {
-                    localStorage.removeItem("tg_user_cache");
-                    window.location.reload();
-                  },
-                },
-              });
-            }}
+            className="text-[10px] uppercase tracking-[0.2em] text-primary/70 font-black mb-1 px-1"
           >
-            Empire Hub <Sparkles className="inline size-2 opacity-50" />
+            Soberania Musical
           </p>
-          <h1 className="text-2xl font-extrabold mt-1">
-            {greeting}
-            {user?.name && user.id !== "guest" ? `, ${user.name}` : ""}
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-black tracking-tight leading-tight">
+              {greeting}
+              {user?.name && user.id !== "guest" ? `, ${user.name.split(" ")[0]}` : ""}
+            </h1>
+            <button 
+              onClick={handleSync}
+              className="p-2 rounded-xl bg-white/5 active:bg-white/10 active:scale-90 transition-all text-muted-foreground/50 hover:text-primary mt-1"
+              title="Sincronizar"
+            >
+              <RotateCw className="size-4" />
+            </button>
+          </div>
         </div>
         {user && (
-          <div className="size-10 rounded-full bg-primary text-primary-foreground grid place-items-center font-black text-sm">
+          <div className="size-12 rounded-2xl bg-primary text-primary-foreground grid place-items-center font-black shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)] charcoal-sketch border-2 border-primary/20">
             {(user.name?.[0] || "U").toUpperCase()}
           </div>
         )}
       </header>
 
-      {user?.id === "guest" && ready && (
-        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-6 mb-8 text-center animate-in fade-in slide-in-from-top-4 duration-500">
-          <Sparkles className="size-8 text-primary mx-auto mb-3" />
-          <h3 className="text-lg font-bold mb-2">Bem-vindo ao Império!</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Não conseguimos detectar seu ID do Telegram automaticamente. 
-            Insira-o abaixo para continuar.
-          </p>
-          <div className="flex gap-2 max-w-xs mx-auto">
-            <input
-              type="text"
-              placeholder="Digite seu ID ou Nome"
-              value={manualId}
-              onChange={(e) => setManualId(e.target.value)}
-              className="flex-1 h-10 px-3 rounded-lg bg-background border border-input focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
-              onKeyDown={(e) => e.key === "Enter" && manualId && setUserManually(manualId)}
-            />
-            <button
-              onClick={() => manualId && setUserManually(manualId)}
-              className="h-10 px-4 bg-primary text-primary-foreground rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all"
-            >
-              Entrar
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Quick grid — Spotify-style shortcut tiles */}
-      <section className="grid grid-cols-2 gap-3 mb-8">
-        <ShortcutTile to="/artistas" label="Meus Artistas" icon={<Library className="size-5" />} />
-        <ShortcutTile to="/charts" label="Império" icon={<Crown className="size-5" />} />
-        <ShortcutTile
-          to="/market"
-          label="Market & Mural"
-          icon={<ShoppingBag className="size-5" />}
-        />
-        <ShortcutTile to="/ranking" label="Ranking" icon={<Star className="size-5" />} />
-        <ShortcutTile to="/gravadoras" label="Gravadoras" icon={<Building2 className="size-5" />} />
-        <ShortcutTile to="/radar" label="Acontecendo" icon={<Radio className="size-5" />} />
-        <ShortcutTile to="/hall" label="Hall da Fama" icon={<Star className="size-5" />} />
-        <ShortcutTile to="/games" label="Games" icon={<Gamepad2 className="size-5" />} />
-        <ShortcutTile to="/duelo" label="Duelo" icon={<Swords className="size-5" />} />
-        <ShortcutTile to="/bet" label="Empire Bets" icon={<Dice5 className="size-5" />} />
-        <ShortcutTile to="/leiloes" label="Leilões" icon={<Gavel className="size-5" />} />
-        <ShortcutTile to="/payola" label="Central Payola" icon={<Megaphone className="size-5" />} />
-        <ShortcutTile
-          to="/filantropia"
-          label="Filantropia"
-          icon={<HandHeart className="size-5" />}
-        />
-        <ShortcutTile to="/incubadora" label="Incubadora" icon={<Building2 className="size-5" />} />
-        <ShortcutTile to="/tutorial" label="Tutorial" icon={<HelpCircle className="size-5" />} />
-      </section>
-
-      {/* Meus artistas — horizontal */}
+      {/* Meus artistas — Destaque Horizontal */}
       {user && (
-        <section className="mb-8">
-          <SectionHeader title="Seus artistas" linkTo="/artistas" />
+        <section className="mb-10">
+          <SectionHeader title="Meu Plantel" linkTo="/artistas" />
           {artists === null ? (
-            <Skeleton h={150} />
+            <Skeleton h={160} />
           ) : artists.length === 0 ? (
-            <EmptyCard>Você ainda não gerencia nenhum artista.</EmptyCard>
+            <EmptyCard>Você ainda não recrutou talentos para sua dinastia.</EmptyCard>
           ) : (
-            <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-2">
+            <div className="flex gap-4 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-4">
               {artists.map((a) => (
                 <Link
                   key={a.nome}
-                  to="/artistas/$nome"
+                  to="/artistas/$nome/"
                   params={{ nome: a.nome }}
-                  className="shrink-0 w-36"
+                  className="shrink-0 w-32 group"
                 >
-                  <div className="aspect-square rounded-xl overflow-hidden bg-secondary mb-2 shadow-lg">
+                  <div className="aspect-[4/5] rounded-2xl overflow-hidden bg-secondary mb-3 shadow-xl transition-transform group-active:scale-95 border border-white/5 relative">
                     <img
                       src={driveImg(a.foto, 300)}
                       alt={a.nome}
                       loading="lazy"
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).style.display = "none";
-                      }}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500"
                     />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                    <div className="absolute bottom-2 left-2 right-2">
+                       <p className="font-bold text-xs truncate leading-none mb-1">{a.nome}</p>
+                       <p className="text-[10px] font-black text-primary uppercase">{fmtEC(a.saldo)}</p>
+                    </div>
                   </div>
-                  <p className="font-bold text-sm truncate">{a.nome}</p>
-                  <p className="text-xs text-muted-foreground">{fmtEC(a.saldo)}</p>
                 </Link>
               ))}
             </div>
@@ -193,51 +157,128 @@ function Index() {
         </section>
       )}
 
-      {/* Radar mini-feed */}
-      <section className="mb-8">
-        <SectionHeader title="Acontecendo agora" linkTo="/radar" />
-        {radar.length === 0 ? (
-          <Skeleton h={80} />
-        ) : (
-          <ul className="space-y-2">
-            {radar.map((r, i) => (
-              <li key={i} className="flex items-center gap-3 p-2 rounded-xl bg-card">
-                <img
-                  src={driveImg(r.foto, 120)}
-                  alt={r.nome}
-                  loading="lazy"
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).style.visibility = "hidden";
-                  }}
-                  className="size-12 rounded-lg object-cover bg-secondary"
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold truncate">{r.nome}</p>
-                  <p className="text-xs text-muted-foreground truncate">{r.acao}</p>
+      {/* Hubs de Gestão Criativa */}
+      <div className="space-y-10">
+        <Category
+          title="Empire Studio"
+          description="Gestão de Talentos e Lançamentos"
+          items={[
+            {
+              to: "/artistas",
+              search: { filter: "all" },
+              label: "Empire Artists",
+              icon: <Library className="size-5" />,
+            },
+            { to: "/incubadora", label: "Empire Corp", icon: <Building2 className="size-5" /> },
+            { to: "/albuns", label: "Empire Albums", icon: <Disc3 className="size-5" /> },
+            { to: "/playlists", label: "Empire Playlists", icon: <ListMusic className="size-5" /> },
+          ]}
+        />
+
+        <Category
+          title="Empire Market"
+          description="Investimentos e Transações"
+          items={[
+            { to: "/market", label: "Empire Market", icon: <ShoppingBag className="size-5" /> },
+            { to: "/leiloes", label: "Empire Auctions", icon: <Gavel className="size-5" /> },
+            { to: "/payola", label: "Empire Payola", icon: <Megaphone className="size-5" /> },
+            { to: "/filantropia", label: "Empire Philanthropy", icon: <HandHeart className="size-5" /> },
+          ]}
+        />
+
+        <Category
+          title="Empire Coliseum"
+          description="Dominação e Competitividade"
+          items={[
+            { to: "/charts", label: "Empire Rankings", icon: <Star className="size-5" /> },
+            { to: "/duelo", label: "Empire Duels", icon: <Swords className="size-5" /> },
+            { to: "/hall", label: "Empire Hall", icon: <Crown className="size-5" /> },
+          ]}
+        />
+
+        <Category
+          title="Empire Extras"
+          description="Sorte, Entretenimento e Suporte"
+          items={[
+            { to: "/bet", label: "Empire Bet", icon: <Dice5 className="size-5" /> },
+            { to: "/games", label: "Empire Games", icon: <Gamepad2 className="size-5" /> },
+            { to: "/radar", label: "Empire Radar", icon: <Radio className="size-5" /> },
+            { to: "/tutorial", label: "Empire Guide", icon: <HelpCircle className="size-5" /> },
+          ]}
+        />
+      </div>
+
+      {/* Radar feed simplificado */}
+      <section className="mt-12 mb-8">
+        <SectionHeader title="Flashes da Indústria" linkTo="/radar" />
+        <div className="grid grid-cols-1 gap-2">
+          {radar.slice(0, 4).map((r, i) => (
+             <div key={i} className="flex items-center gap-3 p-3 rounded-2xl bg-white/[0.03] border border-white/5 active:bg-white/[0.05] transition-colors">
+                <div className="size-10 rounded-lg overflow-hidden shrink-0 border border-white/10 charcoal-sketch">
+                   <img src={driveImg(r.foto, 100)} alt={r.nome} className="w-full h-full object-cover grayscale" />
                 </div>
-                <span className="text-[10px] text-muted-foreground/70 shrink-0">
-                  {r.timestamp.split(" ")[1]}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
+                <div className="flex-1 min-w-0">
+                   <p className="text-xs font-bold truncate">{r.nome}</p>
+                   <p className="text-[10px] text-muted-foreground truncate italic">{r.acao}</p>
+                </div>
+                <div className="text-[9px] font-bold text-muted-foreground/50">{r.timestamp.split(" ")[1]}</div>
+             </div>
+          ))}
+        </div>
       </section>
 
-      <p className="text-center text-xs text-muted-foreground/60 py-6 flex items-center justify-center gap-1">
-        <Sparkles className="size-3" /> Empire RPG • Music Industry Game
-      </p>
+      <footer className="text-center py-8">
+        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/30 flex items-center justify-center gap-2">
+           EST. 2026 • EMPIRE HUB • CONSTRUA SEU LEGADO
+        </p>
+      </footer>
     </main>
+  );
+}
+
+type CategoryItem = {
+  to?: string;
+  search?: any;
+  label: string;
+  icon: React.ReactNode;
+  comingSoon?: boolean;
+};
+
+function Category({
+  title,
+  description,
+  items,
+}: {
+  title: string;
+  description: string;
+  items: CategoryItem[];
+}) {
+  return (
+    <section>
+      <div className="mb-4">
+        <h3 className="text-lg font-black tracking-tight">{title}</h3>
+        <p className="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-wider">
+          {description}
+        </p>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        {items.map((item, i) => (
+          <ShortcutTile key={i} {...item} />
+        ))}
+      </div>
+    </section>
   );
 }
 
 function ShortcutTile({
   to,
+  search,
   label,
   icon,
   comingSoon,
 }: {
   to?: string;
+  search?: any;
   label: string;
   icon: React.ReactNode;
   comingSoon?: boolean;
@@ -265,6 +306,7 @@ function ShortcutTile({
   return (
     <Link
       to={to}
+      search={search}
       className="flex items-center gap-3 p-3 rounded-xl bg-card hover:bg-secondary transition-colors group"
     >
       <div className="size-12 rounded-lg bg-primary/15 text-primary grid place-items-center group-hover:bg-primary group-hover:text-primary-foreground transition-colors">

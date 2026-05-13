@@ -104,7 +104,7 @@ function MarketPage() {
           </div>
           <div>
             <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
-              Loja
+              Mercado Imperial
             </p>
             <h1 className="text-2xl font-black">Empire Market</h1>
           </div>

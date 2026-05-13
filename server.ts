@@ -5,10 +5,13 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  // Configura o timezone do servidor para o fuso de Brasília (GMT-3)
+  process.env.TZ = "America/Sao_Paulo";
+
   // Middleware para configurar headers básicos e CORS
   app.use((req, res, next) => {
     const origin = req.headers.origin;
-    // Permite qualquer origin do Telegram ou do próprio app
+    // Permite qualquer origin do Telegram ou do próprio app para evitar erros de fetch
     if (origin && (origin.includes("telegram.org") || origin.includes("run.app") || origin.includes("localhost"))) {
       res.setHeader("Access-Control-Allow-Origin", origin);
     } else {
@@ -19,16 +22,23 @@ async function startServer() {
     res.setHeader("Access-Control-Allow-Headers", "*");
     res.setHeader("Access-Control-Allow-Credentials", "true");
     
-    // Header necessário para o Telegram Mini Apps funcionar em iFrames (Telegram exige isso)
+    // Essencial para Telegram Mini Apps: remover restrições de iFrame que o Google impõe por padrão
     res.removeHeader("X-Frame-Options");
     
-    // CSP configurada para permitir o iFrame em qualquer lugar do Telegram e Google
-    // O erro "frame-ancestors" sugere que o proxy está injetando uma CSP restritiva.
-    // Tentamos sobrescrever aqui.
-    res.setHeader("Content-Security-Policy", "frame-ancestors 'self' https://web.telegram.org https://*.web.telegram.org https://telegram.org https://*.telegram.org https://*.google.com https://*.run.app;");
+    // Esta CSP é a que permite o jogo abrir dentro do iFrame do Telegram (Web e App)
+    const csp = [
+      "frame-ancestors 'self'",
+      "https://web.telegram.org",
+      "https://*.web.telegram.org",
+      "https://telegram.org",
+      "https://*.telegram.org",
+      "https://*.google.com",
+      "https://*.run.app"
+    ].join(" ");
+    
+    res.setHeader("Content-Security-Policy", csp);
     res.setHeader("X-Content-Type-Options", "nosniff");
     
-    // Responde prontamente a preflights de CORS
     if (req.method === "OPTIONS") {
       return res.sendStatus(200);
     }

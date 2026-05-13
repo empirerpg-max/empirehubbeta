@@ -19,6 +19,9 @@ export interface Artist {
   vendas_total: number;
   telegram_id?: string;
   tour_info?: unknown;
+  descricao?: string;
+  genero?: string;
+  pais?: string;
 }
 
 export interface RadarItem {
@@ -150,8 +153,13 @@ function normalizeArtist(a: Record<string, unknown>): Artist {
     fortuna_total: Number(a.fortuna_total || 0),
     prestigio: Number(a.prestigio || 0),
     fadiga: Number(a.fadiga || 0),
+    seguidores: Number(a.seguidores || 0),
+    vendas_total: Number(a.vendas_total || 0),
     telegram_id: a.telegram_id ? String(a.telegram_id) : undefined,
     tour_info: a.tour_info,
+    descricao: (a.descricao || "")?.toString().trim(),
+    genero: (a.genero || "")?.toString().trim(),
+    pais: (a.pais || "")?.toString().trim(),
   };
 }
 
@@ -192,6 +200,7 @@ export const api = {
     qtd: number;
     continente: string;
   }): Promise<CommonResponse> {
+    invalidateCache();
     return call<CommonResponse>({
       acao: "compra_unificada_tour",
       nome: p.nome,
@@ -209,6 +218,7 @@ export const api = {
     genero: string;
     dataInicio: string;
   }): Promise<CommonResponse> {
+    invalidateCache();
     return call<CommonResponse>({ acao: "compra_cinema", ...p });
   },
   async viral(nome: string, musica: string): Promise<CommonResponse> {
@@ -358,12 +368,17 @@ export const api = {
 
   // ---- Duelo & Bet (Simulação — requer endpoints backend) ----
   async getMusicasBet(): Promise<{ semana: string; musicas: unknown[] } | null> {
-    const r = await call<{ semana: string; musicas: unknown[]; erro?: string }>(
-      { acao: "get_musicas_bet" },
-      { cache: true },
-    );
-    if (!r || r.erro) return null;
-    return r;
+    const acoes = ["musicas_bet", "get_musicas_bet", "musicas_charts", "get_musicas_charts"];
+    for (const acao of acoes) {
+      const r = await call<{ semana: string; musicas: unknown[]; erro?: string }>(
+        { acao },
+        { cache: true },
+      );
+      if (r && !r.erro && Array.isArray(r.musicas) && r.musicas.length > 0) {
+        return r;
+      }
+    }
+    return null;
   },
   async bet(p: {
     nome: string;
@@ -371,7 +386,23 @@ export const api = {
     semana: string;
     previsoes: string;
   }): Promise<CommonResponse> {
+    invalidateCache();
     return call<CommonResponse>({ acao: "bet", ...p });
+  },
+  async listTours(): Promise<any[]> {
+    const acoes = ["listar_todas_tours", "tours", "controle_tours", "listar_tours"];
+    for (const acao of acoes) {
+      const r = await call<any[]>({ acao }, { cache: true });
+      if (Array.isArray(r) && r.length > 0) return r;
+    }
+    return [];
+  },
+  async getAgendaTour(nome: string): Promise<any> {
+    return call<any>({ acao: "agenda_tour", nome }, { cache: true });
+  },
+  async searchSongs(query: string): Promise<any[]> {
+    const r = await call<any[]>({ acao: "buscar_musicas", q: query }, { cache: true });
+    return Array.isArray(r) ? r : [];
   },
 };
 

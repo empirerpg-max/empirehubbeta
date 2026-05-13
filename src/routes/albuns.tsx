@@ -27,51 +27,54 @@ function AlbunsPage() {
   });
 
   return (
-    <main className="flex-1 mx-auto w-full max-w-2xl px-4 pt-6">
-      <header className="mb-5 flex items-center gap-3">
-        <Disc3 className="size-7 text-primary" />
-        <div>
-          <p className="text-xs uppercase tracking-widest text-muted-foreground font-bold">
-            Discoteca
-          </p>
-          <h1 className="text-2xl font-extrabold">Álbuns</h1>
-        </div>
+    <main className="flex-1 mx-auto w-full max-w-2xl px-4 pt-6 pb-12">
+      <header className="mb-8">
+        <p className="text-[10px] uppercase tracking-[0.2em] text-primary/70 font-black mb-1">
+          Produção Fonográfica
+        </p>
+        <h1 className="text-3xl font-black tracking-tight">Empire Albums</h1>
       </header>
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+      
+      <div className="relative mb-6">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/50" />
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Buscar por álbum ou artista"
-          className="w-full bg-card border border-border rounded-xl pl-9 pr-3 py-3 text-sm"
+          placeholder="Buscar obras primas..."
+          className="w-full bg-white/[0.03] border border-white/5 rounded-2xl pl-11 pr-4 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all shadow-inner"
         />
       </div>
+
       {list === null ? (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="aspect-square rounded-xl bg-card animate-pulse" />
+            <div key={i} className="aspect-square rounded-2xl bg-card animate-pulse border border-white/5" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-12">Nenhum álbum encontrado.</p>
+        <p className="text-sm text-muted-foreground text-center py-16 italic">Nenhum registro encontrado nesta era.</p>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {filtered.map((a) => (
             <Link key={a.id} to="/album/$id" params={{ id: a.id! }} className="group">
-              <div className="aspect-square rounded-xl overflow-hidden bg-secondary">
+              <div className="aspect-square rounded-2xl overflow-hidden bg-secondary border border-white/10 charcoal-sketch shadow-xl transition-transform group-active:scale-95">
                 {a.capa_url ? (
                   <img
                     src={driveImg(a.capa_url, 400)}
                     alt={a.titulo}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    className="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500"
                     loading="lazy"
                   />
                 ) : (
-                  <Disc3 className="size-10 text-muted-foreground m-auto mt-12" />
+                  <div className="w-full h-full grid place-items-center bg-card">
+                    <Disc3 className="size-10 text-muted-foreground/30" />
+                  </div>
                 )}
               </div>
-              <p className="mt-2 font-bold text-sm truncate">{a.titulo}</p>
-              <p className="text-xs text-muted-foreground truncate">{a.artista}</p>
+              <div className="mt-3 px-1">
+                <p className="font-bold text-sm truncate tracking-tight">{a.titulo}</p>
+                <p className="text-[10px] font-black text-primary uppercase tracking-widest mt-0.5">{a.artista}</p>
+              </div>
             </Link>
           ))}
         </div>

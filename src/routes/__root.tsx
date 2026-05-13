@@ -6,7 +6,7 @@ import {
   Scripts,
   useLocation,
 } from "@tanstack/react-router";
-import { Home, Crown, Library, Radio, Disc3, ListMusic } from "lucide-react";
+import { Home, Crown, Library, Radio, Disc3, ListMusic, ShoppingBag, Star, Mic2 } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
@@ -100,6 +100,14 @@ function RootShell({ children }: { children: React.ReactNode }) {
 function RootComponent() {
   return (
     <div className="min-h-screen flex flex-col bg-background pb-24">
+      {/* Filtro SVG global para o efeito charcoal-sketch configurado no index.css */}
+      <svg style={{ position: "absolute", width: 0, height: 0 }} aria-hidden="true">
+        <filter id="charcoal-filter">
+          <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="3" result="noise" />
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="2" />
+        </filter>
+      </svg>
+      
       <Outlet />
       <BottomNav />
       <Toaster position="top-center" richColors closeButton />
@@ -110,12 +118,12 @@ function RootComponent() {
 function BottomNav() {
   const { pathname } = useLocation();
   const items = [
-    { to: "/", label: "Início", icon: Home },
+    { to: "/", label: "Hub", icon: Home },
     { to: "/artistas", label: "Artistas", icon: Library },
     { to: "/albuns", label: "Álbuns", icon: Disc3 },
-    { to: "/playlists", label: "Playlists", icon: ListMusic },
-    { to: "/charts", label: "Império", icon: Crown },
-    { to: "/radar", label: "Radar", icon: Radio },
+    { to: "/tours", label: "Tours", icon: Mic2 },
+    { to: "/market", label: "Market", icon: ShoppingBag },
+    { to: "/charts", label: "Rankings", icon: Star },
   ];
   return (
     <nav className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-background/85 backdrop-blur-xl">
