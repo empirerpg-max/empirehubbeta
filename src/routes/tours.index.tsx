@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Mic2, Globe, Users, Ticket, ChevronRight, Loader2 } from "lucide-react";
-import { api, type Artist, fmtMoney } from "@/lib/api";
+import { Mic2, Globe, Users, Ticket, ChevronRight, Loader2, Crown } from "lucide-react";
+import { api, type Artist, fmtMoney, driveImg } from "@/lib/api";
 
 export const Route = createFileRoute("/tours/")({
   component: ToursIndex,
@@ -17,30 +17,36 @@ function ToursIndex() {
       api.listTours(),
       api.listarTodos()
     ]).then(([toursList, allArtists]) => {
+      console.log("Tours from list:", toursList);
+      console.log("All artists for fallback:", allArtists?.length);
+      
       let finalTours: any[] = [];
 
       // 1. Prioridade: dados vindos do listar_tours (CONTROLE_TOURS)
       if (Array.isArray(toursList) && toursList.length > 0) {
-        finalTours = toursList.map(t => ({
-          artista: t.artista || t.nome || t.nome_artista || t.ARTISTA || "",
-          foto: t.foto || t.capa || t.FOTO || t.CAPA || "",
-          titulo: t.titulo || t.nome_tour || t.TOUR || t.TITULO || "The Empire Tour",
-          tipo: t.tipo || t.TIPO || "Arena",
-          status: t.status || t.STATUS || "Em andamento",
-          shows: Number(t.qtd || t.shows || t.SHOWS || 10),
-          realizados: Number(t.shows_realizados || t.realizados || t.REALIZADOS || 0),
-          soldOuts: Number(t.sold_outs || t.soldouts || t.SOLD_OUTS || 0),
-          continente: t.continente || t.CONTINENTE || "Mundial",
-        })).filter(t => t.artista); // Só mostra se tiver o nome do artista
+        finalTours = toursList.map(t => {
+          const artistData = allArtists?.find(a => a.nome === t.artista);
+          return {
+            artista: t.artista,
+            foto: t.foto || "",
+            titulo: t.titulo || "The Empire Tour",
+            tipo: t.porte || "Arena",
+            status: t.status || "Em andamento",
+            shows: Math.max(1, Number(t.total_shows || 0)),
+            realizados: Number(t.show_atual || 0),
+            soldOuts: 0, 
+            continente: t.local_atual || "Mundial",
+          };
+        }).filter(t => t.artista); 
       } 
       
       // 2. Fallback/Complemento: dados vindos do tour_info nos artistas
-      if (finalTours.length === 0 && Array.isArray(allArtists)) {
-        finalTours = allArtists
+      if (Array.isArray(allArtists)) {
+        const fallbackTours = allArtists
           .filter((a) => a.tour_info)
           .map((a) => {
             let info: any = a.tour_info;
-            if (typeof info === "string") {
+            if (typeof info === "string" && info.trim()) {
               try {
                 const cleanJson = info.trim().replace(/^"+|"+$/g, "");
                 info = JSON.parse(cleanJson);
@@ -60,13 +66,20 @@ function ToursIndex() {
               titulo: info.titulo || "The Empire Tour",
               tipo: info.tipo || "Arena",
               status: info.status || "Em andamento",
-              shows: info.qtd || 10,
-              realizados: info.shows_realizados || 0,
-              soldOuts: info.sold_outs || 0,
+              shows: Math.max(1, Number(info.qtd || info.shows || 0)),
+              realizados: Number(info.shows_realizados || info.realizados || 0),
+              soldOuts: Number(info.sold_outs || 0),
               continente: info.continente || "Mundial",
             };
           })
           .filter((t): t is NonNullable<typeof t> => t !== null);
+
+        // Mesclar sem duplicar artistas
+        fallbackTours.forEach(ft => {
+          if (!finalTours.find(t => t.artista === ft.artista)) {
+            finalTours.push(ft);
+          }
+        });
       }
 
       setTours(finalTours);
@@ -117,12 +130,16 @@ function ToursIndex() {
                 <div className="absolute -right-20 -bottom-20 size-48 bg-primary/10 blur-[60px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 
                 <div className="flex gap-4 items-center relative z-10">
-                  <div className="relative size-20 shrink-0 rounded-2xl overflow-hidden border-2 border-white/10 bg-slate-900 shadow-lg">
-                    <img
-                      src={t.foto}
-                      alt={t.artista}
-                      className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-110"
-                    />
+                  <div className="relative size-20 shrink-0 rounded-2xl overflow-hidden border-2 border-white/10 bg-slate-900 shadow-lg flex items-center justify-center">
+                    {t.foto ? (
+                      <img
+                        src={driveImg(t.foto, 400)}
+                        alt={t.artista}
+                        className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-110"
+                      />
+                    ) : (
+                      <Crown className="size-10 text-primary/40 group-hover:scale-110 group-hover:text-primary transition-all duration-500" />
+                    )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                   </div>
 

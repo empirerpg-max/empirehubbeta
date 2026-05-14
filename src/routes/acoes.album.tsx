@@ -66,6 +66,7 @@ function AlbumForm() {
     }
     setSubmitting(true);
     setResult(null);
+    const localTgId = typeof window !== "undefined" ? localStorage.getItem("empire_tg_id") : null;
     const r = await api.lancarAlbum({
       artista: nome,
       titulo,
@@ -76,7 +77,7 @@ function AlbumForm() {
       contracapa_url: contracapa || undefined,
       encarte: encarte.filter(Boolean),
       faixas,
-      telegram_id: user?.id,
+      telegram_id: localTgId || user?.id,
     });
     setSubmitting(false);
     if (r?.ok && r.id) {

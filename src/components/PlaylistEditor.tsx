@@ -24,19 +24,28 @@ export function PlaylistEditor({ existing }: { existing?: PlaylistPayload }) {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    api.listarFaixasCatalogo().then(setCatalog);
+    api.listarFaixasCatalogo().then(data => {
+      setCatalog(data);
+    }).catch(err => {
+      console.error("Erro ao carregar catálogo:", err);
+      setCatalog([]);
+    });
   }, []);
 
-  const filtered = useMemo(() => {
-    if (!catalog) return [];
-    const term = q.toLowerCase();
-    return catalog
-      .filter((t) => 
-        String(t.titulo).toLowerCase().includes(term) || 
-        String(t.artistas).toLowerCase().includes(term)
-      )
-      .slice(0, 50);
-  }, [catalog, q]);
+  async function handleSearch() {
+    if (!q.trim()) return;
+    try {
+      const results = await api.searchSongs(q);
+      // Mesclar resultados da busca no catálogo local se não existirem
+      setCatalog(prev => {
+        const existingIds = new Set((prev || []).map(t => `${t.album_id}-${t.numero}`));
+        const newOnes = results.filter(r => !existingIds.has(`${r.album_id}-${r.numero}`));
+        return [...(prev || []), ...newOnes];
+      });
+    } catch (e) {
+      console.error("Erro na busca remota:", e);
+    }
+  }
 
   function add(t: any) {
     if (tracks.some((x) => x.album_id === t.album_id && x.faixa_numero === t.numero)) return;
@@ -62,20 +71,32 @@ export function PlaylistEditor({ existing }: { existing?: PlaylistPayload }) {
     });
   }
 
+  const filtered = useMemo(() => {
+    if (!catalog) return [];
+    const term = q.toLowerCase();
+    return catalog
+      .filter((t) => 
+        String(t.titulo).toLowerCase().includes(term) || 
+        String(t.artistas).toLowerCase().includes(term)
+      )
+      .slice(0, 100);
+  }, [catalog, q]);
+
   async function salvar() {
     if (!titulo || tracks.length === 0) return;
     setSubmitting(true);
+    const localTgId = typeof window !== "undefined" ? localStorage.getItem("empire_tg_id") : null;
     const payload: PlaylistPayload = {
       id: existing?.id,
       titulo,
       descricao,
       capa_url: capa,
       owner: owner || user?.name || "Player",
-      telegram_id: user?.id,
+      telegram_id: localTgId || user?.id,
       tracks,
       data: existing?.data || new Date().toISOString().slice(0, 10),
     };
-    const r = await api.salvarPlaylist(payload, user?.id);
+    const r = await api.salvarPlaylist(payload, localTgId || user?.id);
     setSubmitting(false);
     const { ok } = notify(r as Record<string, unknown>, {
       successFallback: existing ? "Playlist atualizada!" : "Playlist criada!",
@@ -177,19 +198,36 @@ export function PlaylistEditor({ existing }: { existing?: PlaylistPayload }) {
         <h2 className="text-xs uppercase tracking-widest font-bold text-muted-foreground mb-2">
           Catálogo
         </h2>
-        <div className="relative mb-2">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Buscar faixa ou artista"
-            className="w-full bg-card border border-border rounded-xl pl-9 pr-3 py-2.5 text-sm"
-          />
+        <div className="relative mb-2 flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              placeholder="Buscar faixa ou artista"
+              className="w-full bg-card border border-border rounded-xl pl-9 pr-3 py-2.5 text-sm"
+            />
+          </div>
+          <button 
+            onClick={handleSearch}
+            className="px-4 py-2.5 bg-secondary text-foreground rounded-xl text-xs font-bold active:scale-95 transition-transform"
+          >
+            Buscar
+          </button>
         </div>
         {catalog === null ? (
           <div className="h-24 rounded-xl bg-card animate-pulse" />
+        ) : filtered.length === 0 ? (
+          <div className="py-10 text-center bg-card/50 rounded-2xl border border-dashed border-border">
+            <ListMusic className="size-8 text-muted-foreground/30 mx-auto mb-2" />
+            <p className="text-sm font-medium text-muted-foreground">O catálogo está vazio</p>
+            <p className="text-[10px] text-muted-foreground mt-1 max-w-[200px] mx-auto uppercase tracking-tighter">
+              Lance um álbum ou use a busca acima para encontrar faixas.
+            </p>
+          </div>
         ) : (
-          <ul className="space-y-1 max-h-80 overflow-y-auto">
+          <ul className="space-y-1 max-h-80 overflow-y-auto pr-1 custom-scrollbar">
             {filtered.map((t, i) => (
               <li
                 key={`${t.album_id}-${t.numero}-${i}`}

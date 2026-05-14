@@ -12,7 +12,8 @@ import {
   Mic2,
   Globe,
   Loader2,
-  Trophy
+  Trophy,
+  Crown
 } from "lucide-react";
 import { api, type Artist, fmtEC, driveImg } from "@/lib/api";
 
@@ -25,39 +26,50 @@ function TourDetails() {
   const [artist, setArtist] = useState<Artist | null>(null);
   const [tourDetails, setTourDetails] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     setLoading(true);
     Promise.all([
       api.listarTodos(),
-      api.listTours()
-    ]).then(([artists, toursList]) => {
+      api.listTours(),
+      api.getAgendaTour(nome)
+    ]).then(([artists, toursList, agendaData]) => {
       const art = artists.find(a => a.nome === nome);
       setArtist(art || null);
 
       const tFromList = toursList.find(t => t.artista === nome);
       
       if (tFromList) {
-        let agenda = [];
-        try {
-          if (typeof tFromList.agenda === 'string' && tFromList.agenda.trim()) {
-            agenda = JSON.parse(tFromList.agenda);
-          } else if (Array.isArray(tFromList.agenda)) {
-            agenda = tFromList.agenda;
-          }
-        } catch (e) {
-          console.error("Erro ao processar agenda:", e);
-        }
-
+        const agenda = Array.isArray(agendaData) ? agendaData : [];
         setTourDetails({
           titulo: tFromList.titulo || "The Empire Tour",
-          tipo: tFromList.tipo || "Arena",
+          tipo: tFromList.porte || "Arena",
           status: tFromList.status || "Em andamento",
-          qtd: Number(tFromList.shows || 0),
-          shows_realizados: Number(tFromList.realizados || 0),
-          sold_outs: agenda.filter((s: any) => s.vendidos >= s.capacidade * 0.98).length,
-          arrecadacao_total: Number(tFromList.arrecadacao || 0),
-          agenda: agenda
+          qtd: Number(tFromList.total_shows || 0),
+          shows_realizados: Number(tFromList.show_atual || 0),
+          local_atual: tFromList.local_atual || "Mundial",
+          arrecadacao_total: Number(tFromList.arrecadacao_total || 0),
+          agenda: agenda,
+          foto: tFromList.foto || ""
+        });
+      } else if (art && art.tour_info) {
+        let info: any = art.tour_info;
+        if (typeof info === "string") {
+          try {
+            const cleanJson = info.trim().replace(/^"+|"+$/g, "");
+            info = JSON.parse(cleanJson);
+          } catch { info = {}; }
+        }
+        setTourDetails({
+          titulo: info.titulo || "The Empire Tour",
+          tipo: info.tipo || "Arena",
+          status: info.status || "Em andamento",
+          qtd: Number(info.qtd || 10),
+          shows_realizados: Number(info.shows_realizados || 0),
+          local_atual: info.continente || "Mundial",
+          arrecadacao_total: 0,
+          agenda: []
         });
       }
       setLoading(false);
@@ -94,15 +106,46 @@ function TourDetails() {
     ? info.agenda.reduce((acc: number, s: any) => acc + (Number(s.vendidos) || 0), 0)
     : 0;
 
+  // Calculando Sold Outs a partir da agenda
+  const soldOutsCount = Array.isArray(info.agenda)
+    ? info.agenda.filter((s: any) => Number(s.vendidos) >= Number(s.capacidade) * 0.98).length
+    : 0;
+
+  const handleEditPhoto = async () => {
+    const url = prompt("Insira o link direto da imagem (Google Drive):", info.foto || "");
+    if (url === null) return;
+    
+    setSaving(true);
+    try {
+      const res = await api.vincularImagemTour(nome, url);
+      if (res.ok) {
+        setTourDetails((prev: any) => ({ ...prev, foto: url }));
+        alert(res.message);
+      } else {
+        alert("Erro: " + res.erro);
+      }
+    } catch (e) {
+      alert("Erro ao salvar imagem.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <main className="flex-1 pb-24 bg-background">
       {/* Header Visual */}
       <div className="relative h-[45vh] min-h-[360px] overflow-hidden">
-        <img 
-          src={artist.foto} 
-          className="w-full h-full object-cover object-top scale-105 blur-[2px] opacity-40" 
-          alt="" 
-        />
+        {info.foto ? (
+          <img 
+            src={driveImg(info.foto, 800)} 
+            className="w-full h-full object-cover object-top scale-105 blur-[2px] opacity-40 bg-black" 
+            alt="" 
+          />
+        ) : (
+          <div className="w-full h-full bg-black flex items-center justify-center opacity-30">
+            <Crown className="size-40 text-primary" />
+          </div>
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
         
         <Link 
@@ -115,9 +158,20 @@ function TourDetails() {
         {/* Info Overlay */}
         <div className="absolute inset-x-6 bottom-12 z-20">
           <div className="flex flex-col items-center text-center">
-            <div className="size-20 rounded-[2.5rem] overflow-hidden border-2 border-primary/30 shadow-2xl mb-4 rotate-[-3deg]">
-               <img src={artist.foto} className="w-full h-full object-cover object-top" alt={artist.nome} />
-            </div>
+            <button 
+              onClick={handleEditPhoto}
+              disabled={saving}
+              className="size-20 rounded-[2.5rem] overflow-hidden border-2 border-primary/30 shadow-2xl mb-4 rotate-[-3deg] active:scale-95 transition-transform bg-black relative group"
+            >
+               {info.foto ? (
+                 <img src={driveImg(info.foto, 400)} className="w-full h-full object-cover object-top" alt={artist.nome} />
+               ) : (
+                 <Crown className="size-10 m-auto text-primary" />
+               )}
+               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                 <span className="text-[8px] font-black uppercase text-white tabular-nums">Editar</span>
+               </div>
+            </button>
             <div className="flex items-center gap-2 mb-2">
                <span className="px-3 py-1 rounded-full bg-primary/20 text-primary text-[8px] font-black uppercase tracking-widest border border-primary/20">
                   {info.tipo}
@@ -141,7 +195,7 @@ function TourDetails() {
         {/* Quick Stats */}
         <div className="grid grid-cols-3 gap-3">
            <StatMini icon={<Users className="size-4" />} value={publicoTotal.toLocaleString()} label="Fans" />
-           <StatMini icon={<Star className="size-4" />} value={info.sold_outs} label="Sold Outs" />
+           <StatMini icon={<Star className="size-4" />} value={soldOutsCount} label="Sold Outs" />
            <StatMini icon={<Calendar className="size-4" />} value={`${info.shows_realizados}/${info.qtd}`} label="Shows" />
         </div>
 
@@ -167,8 +221,8 @@ function TourDetails() {
         <section>
           <div className="flex items-center justify-between mb-5 px-1">
              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Itinerário de Shows</h3>
-             <div className="flex items-center gap-1.5 text-[9px] font-black text-primary">
-                <Globe className="size-3" /> EM ROTA MUNDIAL
+             <div className="flex items-center gap-1.5 text-[9px] font-black text-primary uppercase">
+                <Globe className="size-3" /> {info.local_atual || "EM ROTA MUNDIAL"}
              </div>
           </div>
 

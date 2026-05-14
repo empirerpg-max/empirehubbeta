@@ -29,6 +29,7 @@ import {
   TrendingUp,
   Search,
   HelpCircle,
+  Share2,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Toaster, toast } from "sonner";
@@ -206,14 +207,12 @@ function BottomNav() {
   const items = [
     { to: "/", label: "Hub", icon: Home },
     { to: "/artistas", search: { filter: "mine" }, label: "Artistas", icon: Library },
-    { to: "/albuns", label: "Álbuns", icon: Disc3 },
-    { to: "/tours", label: "Tours", icon: Mic2 },
-    { to: "/market", label: "Market", icon: ShoppingBag },
-    { to: "/ranking", label: "Rankings", icon: Star },
+    { to: "/social", label: "Social", icon: Share2 },
+    { to: "/ranking", label: "Rank", icon: Star },
   ];
   return (
     <nav className="fixed bottom-0 inset-x-0 z-40 border-t border-white/5 bg-background/85 backdrop-blur-xl">
-      <div className="mx-auto max-w-2xl flex items-center justify-around px-1 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      <div className="mx-auto max-w-md flex items-center justify-around px-2 py-0.5 pb-[max(0.15rem,env(safe-area-inset-bottom))]">
         {items.map((it) => {
           const active = pathname === it.to || (it.to !== "/" && pathname.startsWith(it.to));
           const Icon = it.icon;
@@ -221,15 +220,16 @@ function BottomNav() {
             <Link
               key={it.to}
               to={it.to}
-              className={`flex flex-col items-center gap-1 px-2 py-1.5 rounded-xl transition-all ${
-                active ? "text-primary" : "text-muted-foreground"
+              search={it.search}
+              className={`flex flex-col items-center gap-0 px-3 py-1 transition-all ${
+                active ? "text-primary opacity-100" : "text-muted-foreground opacity-60"
               }`}
             >
               <Icon
-                className={`size-6 ${active ? "scale-110" : ""}`}
-                strokeWidth={active ? 2.5 : 2}
+                className={`size-4.5 ${active ? "scale-105" : ""}`}
+                strokeWidth={active ? 3 : 2}
               />
-              <span className="text-[10px] font-black uppercase tracking-wider">{it.label}</span>
+              <span className={`text-[7px] font-black uppercase tracking-tighter ${active ? 'visible' : 'visible'}`}>{it.label}</span>
             </Link>
           );
         })}
@@ -330,6 +330,7 @@ function RootComponent() {
                   title="Empire Extras" 
                   icon={Radio}
                   items={[
+                    { to: "/social", label: "Empire Social", icon: Share2 },
                     { to: "/radar", label: "Radar Feed", icon: Radio },
                     { to: "/filantropia", label: "Filantropia", icon: HandHeart },
                     { to: "/games", label: "Jogos", icon: Gamepad2 },

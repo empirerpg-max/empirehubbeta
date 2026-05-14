@@ -893,7 +893,19 @@ function PopStarQuest() {
                 </div>
 
                 <button
-                  onClick={() => {
+                  onClick={async () => {
+                    // Sync coins
+                    const tgId = user?.id || "";
+                    if (tgId && tgId !== "guest" && coins > 0) {
+                      try {
+                        await api.syncGameCoins(tgId, 0, coins * 10);
+                      } catch (e) {
+                         console.error("Erro ao sincronizar moedas:", e);
+                      }
+                    } else if (tgId === "guest") {
+                       console.log("Guest mode: skipping coin sync");
+                    }
+                    
                     if (currentWorld < 4) {
                       setCurrentWorld(currentWorld + 1);
                       setGameState(GameState.WORLD_MAP);
@@ -902,7 +914,7 @@ function PopStarQuest() {
                       navigate({ to: "/games" });
                     }
                   }}
-                  className="w-full p-5 rounded-2xl bg-yellow-500 text-black font-arcade text-sm italic uppercase tracking-widest active:scale-95"
+                  className="w-full p-5 rounded-2xl bg-primary text-black font-black uppercase italic tracking-widest text-sm border-4 border-black shadow-[8px_8px_0px_#000] active:shadow-none active:translate-x-1 active:translate-y-1 transition-all"
                 >
                   CONTINUAR CARREIRA
                 </button>

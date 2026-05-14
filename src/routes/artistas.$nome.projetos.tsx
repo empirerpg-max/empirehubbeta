@@ -37,58 +37,73 @@ function Projetos() {
       </header>
 
       {/* Seção de Turnê em Andamento */}
-      {artist?.tour_info && (
-        <section className="mb-8">
-          <h3 className="text-[10px] uppercase tracking-[0.2em] font-black text-primary mb-3 pl-1 flex items-center gap-2">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-            </span>
-            Turnê em Andamento
-          </h3>
-          <Link
-            to="/tours/$nome/"
-            params={{ nome }}
-            className="block group"
-          >
-            <div className="p-4 rounded-3xl bg-white/[0.03] border border-white/5 group-hover:bg-white/[0.06] transition-all group-hover:scale-[1.01] active:scale-[0.99] relative overflow-hidden">
-               <div className="absolute -right-6 -bottom-6 size-24 bg-primary/10 blur-2xl rounded-full" />
-               <div className="flex justify-between items-start mb-3">
-                 <div>
-                   <p className="text-lg font-black italic uppercase italic tracking-tighter">
-                     {(artist.tour_info as any).titulo || "The Empire Tour"}
-                   </p>
-                   <p className="text-xs text-muted-foreground font-bold">
-                     {(artist.tour_info as any).tipo} • {(artist.tour_info as any).continente}
-                   </p>
+      {(() => {
+        let info: any = artist?.tour_info;
+        if (typeof info === "string" && info.trim()) {
+          try {
+            const cleanJson = info.trim().replace(/^"+|"+$/g, "");
+            info = JSON.parse(cleanJson);
+          } catch {
+            try { info = JSON.parse(info); } catch { info = null; }
+          }
+        }
+        if (!info || typeof info !== "object") return null;
+
+        const progress = Math.min(100, ((Number(info.shows_realizados || 0) / Number(info.qtd || 10)) * 100));
+
+        return (
+          <section className="mb-8">
+            <h3 className="text-[10px] uppercase tracking-[0.2em] font-black text-primary mb-3 pl-1 flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+              </span>
+              Turnê em Andamento
+            </h3>
+            <Link
+              to="/tours/$nome/"
+              params={{ nome }}
+              className="block group"
+            >
+              <div className="p-4 rounded-3xl bg-white/[0.03] border border-white/5 group-hover:bg-white/[0.06] transition-all group-hover:scale-[1.01] active:scale-[0.99] relative overflow-hidden">
+                 <div className="absolute -right-6 -bottom-6 size-24 bg-primary/10 blur-2xl rounded-full" />
+                 <div className="flex justify-between items-start mb-3">
+                   <div>
+                     <p className="text-lg font-black italic uppercase tracking-tighter">
+                       {info.titulo || "The Empire Tour"}
+                     </p>
+                     <p className="text-xs text-muted-foreground font-bold">
+                       {info.tipo} • {info.continente || "Mundial"}
+                     </p>
+                   </div>
+                   <ChevronRight className="size-5 text-muted-foreground group-hover:text-primary transition-colors" />
                  </div>
-                 <ChevronRight className="size-5 text-muted-foreground group-hover:text-primary transition-colors" />
-               </div>
-               
-               <div className="space-y-3">
-                 <div className="flex justify-between text-[10px] font-black uppercase">
-                   <span className="text-muted-foreground">Progresso</span>
-                   <span>{(artist.tour_info as any).shows_realizados || 0} / {(artist.tour_info as any).qtd || 10} Shows</span>
+                 
+                 <div className="space-y-3">
+                   <div className="flex justify-between text-[10px] font-black uppercase">
+                     <span className="text-muted-foreground">Progresso</span>
+                     <span>{info.shows_realizados || 0} / {info.qtd || 10} Shows</span>
+                   </div>
+                   <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                     <div 
+                       className="h-full bg-primary shadow-[0_0_8px_rgba(var(--primary),0.5)]" 
+                       style={{ width: `${progress}%` }}
+                     />
+                   </div>
+                   <div className="flex items-center gap-4 text-[9px] font-bold uppercase text-muted-foreground">
+                     <span className="flex items-center gap-1">
+                       <Star className="size-3 text-amber-500" /> {info.sold_outs || 0} Sold Outs
+                     </span>
+                     <span className="flex items-center gap-1">
+                       <TrendingUp className="size-3 text-emerald-500" /> {info.status || "Ativo"}
+                     </span>
+                   </div>
                  </div>
-                 <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                   <div 
-                     className="h-full bg-primary" 
-                     style={{ width: `${Math.min(100, (((artist.tour_info as any).shows_realizados || 0) / ((artist.tour_info as any).qtd || 10)) * 100)}%` }}
-                   />
-                 </div>
-                 <div className="flex items-center gap-4 text-[9px] font-bold uppercase text-muted-foreground">
-                   <span className="flex items-center gap-1">
-                     <Star className="size-3 text-amber-500" /> {(artist.tour_info as any).sold_outs || 0} Sold Outs
-                   </span>
-                   <span className="flex items-center gap-1">
-                     <TrendingUp className="size-3 text-emerald-500" /> Ativo
-                   </span>
-                 </div>
-               </div>
-            </div>
-          </Link>
-        </section>
-      )}
+              </div>
+            </Link>
+          </section>
+        );
+      })()}
 
       <h3 className="text-[10px] uppercase tracking-[0.2em] font-black text-muted-foreground mb-3 pl-1">
         Lançamentos e Mídias
@@ -135,11 +150,20 @@ function Projetos() {
               </div>
               <p className="font-bold mt-1">{p.titulo}</p>
               {p.detalhe && <p className="text-xs text-muted-foreground mt-1">{p.detalhe}</p>}
-              {p.data && <p className="text-[10px] text-muted-foreground/70 mt-1">{p.data}</p>}
+              {p.data && <p className="text-[10px] text-muted-foreground/70 mt-1">{fmtDate(p.data)}</p>}
             </li>
           ))}
         </ul>
       )}
     </main>
   );
+}
+
+function fmtDate(d: string) {
+  if (!d) return "";
+  const cleanDate = d.split("T")[0];
+  const parts = cleanDate.split("-");
+  if (parts.length !== 3) return d;
+  const [y, m, day] = parts;
+  return `${day}/${m}/${y}`;
 }

@@ -75,6 +75,9 @@ function AlbumPage() {
     );
   }
 
+  const localTgId = typeof window !== "undefined" ? localStorage.getItem("empire_tg_id") : null;
+  const isOwner = album && localTgId && (String(album.telegram_id) === String(localTgId) || localTgId === "810141686");
+
   return (
     <main className="flex-1 mx-auto w-full max-w-2xl pb-32">
       <div
@@ -129,13 +132,15 @@ function AlbumPage() {
           >
             <Share2 className="size-4" /> {copied ? "Link copiado!" : "Compartilhar"}
           </button>
-          <Link
-            to="/album/$id/editar"
-            params={{ id }}
-            className="px-4 py-2 rounded-full bg-card border border-border inline-flex items-center gap-2 text-sm font-bold"
-          >
-            <Edit className="size-4" /> Editar
-          </Link>
+          {isOwner && (
+            <Link
+              to="/album/$id/editar"
+              params={{ id }}
+              className="px-4 py-2 rounded-full bg-card border border-border inline-flex items-center gap-2 text-sm font-bold"
+            >
+              <Edit className="size-4" /> Editar
+            </Link>
+          )}
         </div>
       </div>
 
@@ -303,6 +308,10 @@ function AlbumPage() {
 
 function fmtDate(d: string) {
   if (!d) return "";
-  const [y, m, day] = d.split("-");
+  // Tira qualquer parte de hora se vier ISO (ex: 2026-05-14T...)
+  const cleanDate = d.split("T")[0];
+  const parts = cleanDate.split("-");
+  if (parts.length !== 3) return d;
+  const [y, m, day] = parts;
   return `${day}/${m}/${y}`;
 }

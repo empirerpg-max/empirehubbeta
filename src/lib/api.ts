@@ -104,7 +104,21 @@ const CACHE_TTL = 30_000; // 30s
 const inflight = new Map<string, Promise<unknown>>();
 
 async function rawCall<T = unknown>(params: Record<string, unknown>): Promise<T> {
-  const res = await fetch(`${SCRIPT_URL}?${qs(params)}`, { method: "GET" });
+  const isPost = params.payload || JSON.stringify(params).length > 1000;
+  
+  const options: RequestInit = {
+    method: isPost ? "POST" : "GET",
+  };
+
+  if (isPost) {
+    options.body = JSON.stringify(params);
+    // Nota: Nao definimos Content-Type como application/json porque Apps Script 
+    // lida melhor com text/plain no doPost se nao houver complexidade de pre-flight.
+    // Mas o JSON.parse(e.postData.contents) no backend espera esse formato.
+  }
+
+  const url = isPost ? SCRIPT_URL : `${SCRIPT_URL}?${qs(params)}`;
+  const res = await fetch(url, options);
   const text = await res.text();
   try {
     return JSON.parse(text) as T;
@@ -420,6 +434,10 @@ export const api = {
   async getAgendaTour(nome: string): Promise<any> {
     return call<any>({ acao: "agenda_tour", nome }, { cache: true });
   },
+  async vincularImagemTour(nome: string, url: string): Promise<CommonResponse> {
+    invalidateCache();
+    return call<CommonResponse>({ acao: "vincular_imagem_tour", nome, url });
+  },
   async searchSongs(query: string): Promise<any[]> {
     const r = await call<any[]>({ acao: "buscar_musicas", q: query }, { cache: true });
     return Array.isArray(r) ? r : [];
@@ -435,6 +453,65 @@ export const api = {
   async topCharts(): Promise<Record<string, ChartData>> {
     const data = await call<Record<string, ChartData>>({ acao: "top_charts" }, { cache: true });
     return data || {};
+  },
+  
+  // ---- Social ----
+  async listarPostsSocial(): Promise<any[]> {
+    const r = await call<any[]>({ acao: "listarPostsSocial" }, { cache: false });
+    return Array.isArray(r) ? r : [];
+  },
+  async salvarPostSocial(payload: any, tgId: string): Promise<CommonResponse> {
+    invalidateCache();
+    return call<CommonResponse>({ acao: "salvarPostSocial", payload: JSON.stringify(payload), tgId });
+  },
+  async listarPerfisSocial(tgId?: string): Promise<any[]> {
+    const r = await call<any[]>({ acao: "listarPerfisSocial", tgId }, { cache: false });
+    return Array.isArray(r) ? r : [];
+  },
+  async salvarPerfilSocial(payload: any, tgId: string): Promise<CommonResponse> {
+    invalidateCache();
+    return call<CommonResponse>({ acao: "salvarPerfilSocial", payload: JSON.stringify(payload), tgId });
+  },
+  async curtirPostSocial(postId: string, tgId: string): Promise<any> {
+    return call<any>({ acao: "curtirPostSocial", postId, tgId });
+  },
+  async comentarPostSocial(payload: any, tgId: string): Promise<any> {
+    return call<any>({ acao: "comentarPostSocial", payload: JSON.stringify(payload), tgId });
+  },
+  async listarComentariosSocial(postId: string): Promise<any[]> {
+    const r = await call<any[]>({ acao: "listarComentariosSocial", postId }, { cache: false });
+    return Array.isArray(r) ? r : [];
+  },
+  async salvarNewsSocial(payload: any, tgId: string): Promise<any> {
+    return call<any>({ acao: "salvarNewsSocial", payload: JSON.stringify(payload), tgId });
+  },
+  async listarNewsSocial(): Promise<any[]> {
+    const r = await call<any[]>({ acao: "listarNewsSocial" }, { cache: false });
+    return Array.isArray(r) ? r : [];
+  },
+
+  // ---- Games & Economy ----
+  async syncGameCoins(tgId: string, wager: number, won: number): Promise<CommonResponse & { novoSaldo?: number }> {
+    invalidateCache();
+    return call<CommonResponse & { novoSaldo?: number }>({ 
+      acao: "sync_game_coins", 
+      telegram_id: tgId, 
+      wager, 
+      won 
+    });
+  },
+  async savePetState(tgId: string, payload: string): Promise<CommonResponse> {
+    return call<CommonResponse>({ 
+      acao: "save_pet_state", 
+      telegram_id: tgId, 
+      payload 
+    });
+  },
+  async getPetState(tgId: string): Promise<CommonResponse & { payload?: string; lastUpdate?: number }> {
+    return call<CommonResponse & { payload?: string; lastUpdate?: number }>({ 
+      acao: "get_pet_state", 
+      telegram_id: tgId 
+    });
   },
 };
 
@@ -479,8 +556,9 @@ export function fmtMoney(n: number) {
 // Usamos o thumbnail endpoint, que serve direto e aceita parâmetro de tamanho.
 export function driveImg(url: string | undefined | null, size: number = 400): string | undefined {
   if (!url) return undefined;
+  if (url.includes("lh3.googleusercontent.com")) return url;
   const m = String(url).match(/[-\w]{25,}/);
-  if (!m) return undefined;
+  if (!m) return url;
   return `https://lh3.googleusercontent.com/d/${m[0]}=w${size}-h${size}`;
 }
 
