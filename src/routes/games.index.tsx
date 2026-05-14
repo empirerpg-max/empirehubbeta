@@ -12,195 +12,151 @@ function GamesHub() {
     {
       id: "hits-producer",
       title: "Produtor de Hits",
-      description: "Um jogo de ritmo frenético. Acerte as notas para criar o hit do ano!",
+      description: "Domine o ritmo e transforme sua aposta em hits globais.",
       image: "https://images.unsplash.com/photo-1514525253361-bee8718a74a2?q=80&w=400&h=250&auto=format&fit=crop",
-      tag: "Destaque",
-      difficulty: "Difícil",
-      points: "Multiplicador de Wager",
-      route: "/games/hits-producer"
+      tag: "RITMO",
+      difficulty: "DIFÍCIL",
+      points: "MULTIPLICADOR EC",
+      route: "/games/hits-producer",
+      active: true
     },
     {
       id: "studio-pet",
-      title: "Mascote do Estúdio",
-      description: "Cuide do seu pet virtual para ganhar bônus passivos na carreira.",
-      image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=400&h=250&auto=format&fit=crop",
-      tag: "Idle",
-      difficulty: "Fácil",
-      points: "Loot Aleatório",
-      route: "/games/studio-pet"
+      title: "Studio Pet",
+      description: "Cuide do mascote do estúdio e ganhe bônus diários.",
+      image: "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?q=80&w=400&h=250&auto=format&fit=crop",
+      tag: "PET",
+      difficulty: "FÁCIL",
+      points: "BÔNUS DIÁRIO",
+      route: "/games/studio-pet",
+      active: true
     },
     {
       id: "paparazzi-escape",
-      title: "Fuga do Paparazzi",
-      description: "Corra das câmeras! Decida quando parar antes que seja tarde demais.",
-      image: "https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?q=80&w=400&h=250&auto=format&fit=crop",
-      tag: "Risco",
-      difficulty: "Médio",
-      points: "Cash-Out Progressivo",
-      route: "/games/paparazzi-escape"
+      title: "Paparazzi Escape",
+      description: "Fuja dos paparazzi em uma corrida alucinante pela cidade.",
+      image: "https://images.unsplash.com/photo-1502602730302-390c2306d87e?q=80&w=400&h=250&auto=format&fit=crop",
+      tag: "AÇÃO",
+      difficulty: "MÉDIO",
+      points: "REPUTAÇÃO",
+      route: "/games/paparazzi-escape",
+      active: true
     },
     {
-      id: "popstar-quest",
-      title: "Pop Star Quest",
-      description: "Suba do Bubbling Under ao Hot 100 nesta aventura de plataforma!",
-      image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=400&h=250&auto=format&fit=crop",
-      tag: "Plataforma",
-      difficulty: "Médio",
-      points: "Fixo EC",
-      route: "/games/popstar-quest"
-    },
-    {
-      id: "chart-runner",
-      title: "Chart Runner",
-      description: "Desvie dos haters e colete certificados de platina.",
-      image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=400&h=250&auto=format&fit=crop",
-      tag: "Infinito",
-      difficulty: "Médio",
-      points: "Até 1.000 EC",
-      route: "/games/chart-runner" // Placeholder
-    },
-    {
-      id: "lyric-master",
-      title: "Lyric Master",
-      description: "Complete as letras das músicas famosas do Império.",
+      id: "queridometro",
+      title: "Queridômetro",
+      description: "Avalie seus rivais e aliados. Quem será o mais amado da semana?",
       image: "https://images.unsplash.com/photo-1516280440614-37939bbacd81?q=80&w=400&h=250&auto=format&fit=crop",
-      tag: "Quiz",
-      difficulty: "Fácil",
-      points: "200 EC",
-      route: "/games/lyric-master" // Placeholder
-    },
-    {
-      id: "studio-tycoon",
-      title: "Studio Tycoon",
-      description: "Gerencie recursos limitados para gravar um álbum nota 10.",
-      image: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?q=80&w=400&h=250&auto=format&fit=crop",
-      tag: "Estratégia",
-      difficulty: "Expert",
-      points: "Ranking",
-      route: "/games/studio-tycoon" // Placeholder
-    },
-    {
-       id: "wheel-of-fame",
-       title: "Roda da Fama",
-       description: "Gire a roda e tente a sorte para ganhar prêmios raros.",
-       image: "https://images.unsplash.com/photo-1518133910546-b6c2fb7d79e3?q=80&w=400&h=250&auto=format&fit=crop",
-       tag: "Sorte",
-       difficulty: "Fácil",
-       points: "Prêmios do Market",
-       route: "/games/wheel-of-fame" // Placeholder
-    },
-    {
-       id: "bet-on-charts",
-       title: "Aposta nos Charts",
-       description: "Aposte em quem vai subir ou descer na Billboard amanhã.",
-       image: "https://images.unsplash.com/photo-1518893063132-36e46dbe2428?q=80&w=400&h=250&auto=format&fit=crop",
-       tag: "Social",
-       difficulty: "Difícil",
-       points: "Aposta EC",
-       route: "/games/bet-on-charts" // Placeholder
-    },
-    {
-       id: "fan-clicker",
-       title: "Fan Clicker",
-       description: "Clique rápido para converter fãs casuais em stan de verdade.",
-       image: "https://images.unsplash.com/photo-1493225255756-d9584f8606e9?q=80&w=400&h=250&auto=format&fit=crop",
-       tag: "Clicker",
-       difficulty: "Fácil",
-       points: "Até 500 EC",
-       route: "/games/fan-clicker" // Placeholder
+      tag: "SOCIAL",
+      difficulty: "FÁCIL",
+      points: "REPUTAÇÃO",
+      route: "/games/queridometro",
+      active: true
     }
   ];
 
   return (
-    <main className="flex-1 mx-auto w-full max-w-2xl px-4 pt-6 pb-32">
-      <Link to="/" className="inline-flex items-center gap-1 text-muted-foreground mb-4 font-black uppercase text-[10px]">
-        <ChevronLeft className="size-4" /> Voltar
+    <main className="flex-1 mx-auto w-full max-w-2xl px-4 pt-6 pb-32 bg-[#F5F5F5] min-h-screen">
+      <Link to="/" className="inline-flex items-center gap-1 text-black mb-6 font-black uppercase text-[10px] hover:text-primary transition-colors">
+        <ChevronLeft className="size-4" /> Painel Geral
       </Link>
 
-      <header className="mb-8">
-        <div className="size-14 rounded-2xl bg-primary text-black grid place-items-center mb-4 shadow-[4px_4px_0px_#000] border-2 border-black">
-          <Gamepad2 className="size-7" />
+      <header className="mb-10">
+        <div className="size-16 rounded-[24px] bg-primary text-black grid place-items-center mb-6 shadow-[6px_6px_0px_#000] border-4 border-black">
+          <Gamepad2 className="size-8" />
         </div>
-        <h1 className="text-4xl font-black italic uppercase tracking-tighter text-black">Empire <span className="text-primary">Games</span></h1>
-        <p className="text-black/60 font-medium mt-2">Jogue, ganhe Empire Coins e potencie sua carreira.</p>
+        <h1 className="text-5xl font-black italic uppercase tracking-tighter text-black leading-none">
+          Empire <span className="text-primary drop-shadow-[2px_2px_0px_rgba(0,0,0,1)]">Games</span>
+        </h1>
+        <p className="text-black font-black mt-3 uppercase text-[10px] tracking-widest opacity-40">Setor de Entretenimento Bancário</p>
       </header>
 
-
-      {/* Guest Warning */}
-      {user?.id === "guest" && (
-        <section className="mb-8 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs leading-relaxed">
-          <p className="font-bold mb-1">Acesso via Telegram Web (PC)</p>
-          Detectamos que você está usando a versão web do Telegram no computador. Às vezes ela não
-          fornece sua identidade automaticamente. Se encontrar problemas, tente abrir o link direto
-          do bot ou use o celular.
-        </section>
-      )}
-
       {/* ID Status Badge */}
-      <div className="mb-6 flex justify-center">
+      <div className="mb-10">
         <div
-          className={`px-4 py-2 rounded-xl text-xs font-bold border flex items-center gap-2 ${user?.id === "guest" ? "bg-red-500/10 border-red-500/30 text-red-500" : "bg-primary/10 border-primary/30 text-primary"}`}
+          className={`inline-flex px-5 py-2.5 rounded-2xl text-[11px] font-black uppercase border-4 border-black shadow-[6px_6px_0px_#000] items-center gap-3 ${user?.id === "guest" ? "bg-red-500 text-white" : "bg-white text-black"}`}
         >
-          <div
-            className={`size-2 rounded-full animate-pulse ${user?.id === "guest" ? "bg-red-500" : "bg-primary"}`}
-          />
-          ID do Telegram: <span className="font-mono tracking-wider">{user?.id}</span>
+          <div className="size-2.5 rounded-full bg-current animate-pulse" />
+          Terminal Ativo: {user?.id}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
+      <div className="grid grid-cols-1 gap-8">
         {games.map((game) => (
           <Link
             key={game.id}
             to={game.route as any}
-            className="group relative bg-white border-4 border-black p-4 rounded-[32px] transition-all hover:-translate-y-1 hover:shadow-[12px_12px_0px_#000] active:translate-y-0.5 active:shadow-none shadow-[8px_8px_0px_#000] flex gap-4 overflow-hidden"
+            className={`group relative bg-white border-4 border-black p-6 rounded-[48px] transition-all flex flex-col sm:flex-row gap-8 overflow-hidden items-center ${
+              game.active 
+                ? "hover:-translate-y-1 hover:shadow-[16px_16px_0px_#000] active:translate-y-0.5 active:shadow-none shadow-[12px_12px_0px_#000]" 
+                : "opacity-60 cursor-not-allowed shadow-[8px_8px_0px_#000]"
+            }`}
           >
-            {/* Glossy overlay effect */}
-            <div className="absolute inset-x-0 top-0 h-1/2 bg-white/10 pointer-events-none" />
-            
-            <div className="size-28 sm:size-32 rounded-2xl overflow-hidden border-2 border-black flex-shrink-0 relative">
+            <div className="size-40 sm:size-44 rounded-[32px] overflow-hidden border-4 border-black flex-shrink-0 relative">
               <img
                 src={game.image}
                 alt={game.title}
-                className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                className={`w-full h-full object-cover transition-transform ${game.active ? "group-hover:scale-110" : ""}`}
               />
-              <div className="absolute top-2 right-2 bg-primary text-black text-[9px] font-black px-2 py-1 rounded-full border border-black uppercase tracking-widest shadow-[2px_2px_0px_#000]">
+              <div className="absolute top-4 right-4 bg-primary text-black text-[10px] font-black px-4 py-1.5 rounded-full border-2 border-black uppercase tracking-tighter shadow-[3px_3px_0px_#000]">
                 {game.tag}
               </div>
+              {!game.active && (
+                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                  <Play className="size-12 text-white/40" />
+                </div>
+              )}
             </div>
 
-            <div className="flex-1 flex flex-col justify-center min-w-0">
-              <div className="flex flex-col mb-1">
-                <h2 className="text-xl sm:text-2xl font-black italic uppercase leading-none text-black truncate group-hover:text-primary transition-colors">{game.title}</h2>
-                <p className="text-[11px] font-medium text-black/50 mt-1 line-clamp-2 leading-tight">{game.description}</p>
+            <div className="flex-1 flex flex-col justify-center min-w-0 text-center sm:text-left">
+              <div className="flex flex-col mb-2">
+                <h2 className="text-3xl sm:text-4xl font-black italic uppercase leading-[0.85] text-black mb-3">
+                  {game.title}
+                </h2>
+                <p className="text-[11px] font-bold text-black/50 leading-tight uppercase tracking-tight max-w-[280px]">
+                  {game.description}
+                </p>
               </div>
 
-              <div className="flex items-center gap-4 mt-3">
-                <div className="flex items-center gap-1.5 text-[10px] font-black uppercase text-black italic">
-                  <Star className="size-3 text-amber-500 fill-amber-500" />
+              <div className="flex items-center justify-center sm:justify-start gap-8 mt-5">
+                <div className="flex items-center gap-2.5 text-[12px] font-black uppercase text-black italic">
+                  <Star className="size-4 text-primary fill-primary" />
                   {game.difficulty}
                 </div>
-                <div className="flex items-center gap-1.5 text-[10px] font-black uppercase text-black italic">
-                  <Trophy className="size-3 text-primary" />
+                <div className="flex items-center gap-2.5 text-[12px] font-black uppercase text-black italic">
+                  <Trophy className="size-4 text-primary" />
                   {game.points}
                 </div>
               </div>
 
-              <div className="mt-4 py-2 rounded-xl bg-primary text-black font-black uppercase italic tracking-wider text-xs flex items-center justify-center gap-2 border-2 border-black shadow-[4px_4px_0px_#000] group-hover:bg-white transition-all">
-                <Play className="size-4 fill-current" />
-                Jogar Agora
+              <div className={`mt-8 py-4 rounded-[20px] font-black uppercase italic tracking-[0.2em] text-xs flex items-center justify-center gap-4 border-2 transition-all ${
+                game.active 
+                  ? "bg-black text-primary border-primary group-hover:bg-primary group-hover:text-black group-hover:border-black shadow-[6px_6px_0px_rgba(0,0,0,0.1)] group-hover:shadow-none" 
+                  : "bg-zinc-200 text-zinc-400 border-zinc-300"
+              }`}>
+                {game.active ? (
+                  <>
+                    <Play className="size-5 fill-current" />
+                    Iniciar Sessão
+                  </>
+                ) : (
+                  <>Brevemente</>
+                )}
               </div>
             </div>
           </Link>
         ))}
       </div>
 
-      <section className="mt-12 p-6 rounded-3xl bg-secondary/50 border border-border/50 text-center">
-        <h3 className="font-bold text-muted-foreground uppercase text-xs tracking-widest mb-2">
-          Desafio da Semana
+      <section className="mt-16 p-10 rounded-[48px] bg-primary border-4 border-black shadow-[16px_16px_0px_#000] text-center relative overflow-hidden">
+        {/* Decorative pattern */}
+        <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:16px_16px]" />
+        
+        <h3 className="font-black text-black uppercase text-2xl tracking-tighter mb-3 italic leading-none relative z-10">
+          ALERTA DE SISTEMA
         </h3>
-        <p className="text-sm font-medium">
-          Chegue ao Top 10 no Pop Star Quest e ganhe um item raro no Market!
+        <p className="text-[11px] font-black text-black/60 uppercase leading-relaxed max-w-[300px] mx-auto relative z-10">
+          Novos algoritmos de entretenimento estão sendo carregados. Fique atento para atualizações.
         </p>
       </section>
     </main>

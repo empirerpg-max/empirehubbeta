@@ -1,6 +1,6 @@
 /**
  * EMPIRE HUB - MOTOR BACKEND INTEGRAL (GOOGLE APPS SCRIPT)
- * Versão: 12.6.0 "Empire Games & Social Evolution"
+ * Versão: 12.7.0 "Empire Games & Social Evolution"
  * 
  * SISTEMA UNIFICADO DE CONTROLE - GESTÃO DE CARREIRAS EM TEMPO REAL
  */
@@ -61,7 +61,7 @@ function _mapActs(r) {
 function _mapArtistaJogador(r) {
   return {
     nome: String(r[0]||'').trim(), 
-    foto: String(r[1]||''), 
+    foto: driveUrl(String(r[1]||'').trim()), 
     status: String(r[2]||'Livre'),
     saldo: parseFloat(r[3])||0, 
     descricao: String(r[4]||'').trim(),
@@ -77,21 +77,18 @@ function _mapArtistaJogador(r) {
   };
 }
 
-// ── ROTEADOR PRINCIPAL ──
-
-// ── MÓDULO SOCIAL ──
-
 /**
  * Converte links de compartilhamento do Google Drive para links diretos
  */
 function driveUrl(url) {
   if (!url) return "";
-  if (url.indexOf('drive.google.com') > -1) {
+  const sUrl = String(url).trim();
+  if (sUrl.indexOf('drive.google.com') > -1) {
     var id = "";
-    if (url.indexOf('id=') > -1) {
-      id = url.split('id=')[1].split('&')[0];
+    if (sUrl.indexOf('id=') > -1) {
+      id = sUrl.split('id=')[1].split('&')[0];
     } else {
-      var parts = url.split('/');
+      var parts = sUrl.split('/');
       for (var i = 0; i < parts.length; i++) {
         if (parts[i] === 'd') {
           id = parts[i+1];
@@ -101,152 +98,10 @@ function driveUrl(url) {
     }
     if (id) return "https://lh3.googleusercontent.com/d/" + id;
   }
-  return url;
+  return sUrl;
 }
 
-function salvarPostSocial(payload, tgId) {
-  try {
-    const p = JSON.parse(payload);
-    const ws = aba('SOCIAL_POSTS');
-    if (ws.getLastRow() === 0) {
-      ws.appendRow(['id', 'tipo', 'subtipo', 'autor', 'texto', 'media_url', 'analytics', 'data', 'telegram_id']);
-    }
-    const id = 'POST-' + Utilities.getUuid().slice(0, 8);
-    ws.appendRow([
-      id, p.tipo, p.subtipo || "", String(p.autor || "").trim(), p.texto || "",
-      driveUrl(String(p.media_url || "").trim()),
-      JSON.stringify(p.analytics || { likes: 0, comments: 0, shares: 0 }),
-      new Date().toISOString(), String(tgId || p.telegram_id || "").trim()
-    ]);
-    return { ok: true, id };
-  } catch(e) { return { ok: false, erro: e.message }; }
-}
-
-function listarPostsSocial() {
-  try {
-    const ws = aba('SOCIAL_POSTS');
-    const data = ws.getDataRange().getValues();
-    if (data.length <= 1) return [];
-    const perfis = listarPerfisSocial();
-    return data.slice(1).reverse().map(r => {
-      const postId = r[0];
-      const autor = String(r[3] || "").trim();
-      const rede = String(r[1] || "").trim();
-      const perfil = perfis.find(p => String(p.artista).trim().toLowerCase() === autor.toLowerCase() && String(p.rede).trim().toLowerCase() === rede.toLowerCase());
-      return {
-        id: postId, tipo: rede, subtipo: r[2], autor: autor,
-        handle: perfil ? perfil.handle : `@${autor.replace(/\s+/g, '').toLowerCase()}`,
-        avatar: perfil ? perfil.avatar_url : "",
-        texto: r[4], media_url: String(r[5] || "").trim(),
-        analytics: JSON.parse(r[6] || '{}'), data: r[7], telegram_id: String(r[8] || '').trim()
-      };
-    });
-  } catch(e) { return []; }
-}
-
-function salvarPerfilSocial(payload, tgId) {
-  try {
-    const p = JSON.parse(payload);
-    const ws = aba('SOCIAL_PERFIS');
-    if (ws.getLastRow() === 0) ws.appendRow(['artista', 'rede', 'handle', 'bio', 'avatar_url', 'telegram_id', 'seguidores']);
-    const data = ws.getDataRange().getValues();
-    let rowIdx = -1;
-    const targetArt = String(p.artista || "").trim().toLowerCase();
-    const targetRede = String(p.rede || "").trim().toLowerCase();
-    for (let i = 1; i < data.length; i++) {
-      if (String(data[i][0]).trim().toLowerCase() === targetArt && String(data[i][1]).trim().toLowerCase() === targetRede) {
-        rowIdx = i + 1; break;
-      }
-    }
-    const rowData = [String(p.artista || "").trim(), String(p.rede || "").trim(), String(p.handle || "").trim(), p.bio || "", driveUrl(String(p.avatar_url || "").trim()), String(tgId || p.telegram_id || '').trim(), p.seguidores || 0];
-    if (rowIdx !== -1) ws.getRange(rowIdx, 1, 1, 7).setValues([rowData]);
-    else ws.appendRow(rowData);
-    return { ok: true };
-  } catch(e) { return { ok: false, erro: e.message }; }
-}
-
-function curtirPostSocial(postId, tgId) {
-  try {
-    const ws = aba('SOCIAL_POSTS');
-    const data = ws.getDataRange().getValues();
-    for (let i = 1; i < data.length; i++) {
-      if (data[i][0] === postId) {
-        const analytics = JSON.parse(data[i][6] || '{}');
-        analytics.likes = (analytics.likes || 0) + 1;
-        ws.getRange(i + 1, 7).setValue(JSON.stringify(analytics));
-        return { ok: true, likes: analytics.likes };
-      }
-    }
-    return { ok: false, erro: 'Post não encontrado' };
-  } catch(e) { return { ok: false, erro: e.message }; }
-}
-
-function comentarPostSocial(payload, tgId) {
-  try {
-    const p = JSON.parse(payload);
-    const ws = aba('SOCIAL_COMMENTS');
-    if (ws.getLastRow() === 0) ws.appendRow(['postId', 'autor', 'texto', 'data', 'telegram_id']);
-    ws.appendRow([p.postId, p.autor, p.texto, new Date().toISOString(), tgId]);
-    const wsPost = aba('SOCIAL_POSTS');
-    const postData = wsPost.getDataRange().getValues();
-    for (let i = 1; i < postData.length; i++) {
-      if (postData[i][0] === p.postId) {
-        const analytics = JSON.parse(postData[i][6] || '{}');
-        analytics.comments = (analytics.comments || 0) + 1;
-        wsPost.getRange(i + 1, 7).setValue(JSON.stringify(analytics));
-        break;
-      }
-    }
-    return { ok: true };
-  } catch(e) { return { ok: false, erro: e.message }; }
-}
-
-function listarComentariosSocial(postId) {
-  try {
-    const ws = aba('SOCIAL_COMMENTS');
-    const data = ws.getDataRange().getValues();
-    if (data.length <= 1) return [];
-    const perfis = listarPerfisSocial();
-    return data.slice(1).filter(r => r[0] === postId).map(r => {
-      const autor = String(r[1] || "").trim();
-      const perfil = perfis.find(p => String(p.artista).trim().toLowerCase() === autor.toLowerCase());
-      return { autor: autor, texto: r[2], data: r[3], avatar: perfil ? perfil.avatar_url : "" };
-    });
-  } catch(e) { return []; }
-}
-
-function listarPerfisSocial(tgId) {
-  const ws = aba('SOCIAL_PERFIS');
-  const data = ws.getDataRange().getValues();
-  if (data.length <= 1) return [];
-  const searchId = tgId ? String(tgId).trim() : null;
-  return data.slice(1).filter(r => !searchId || String(r[5]).trim() === searchId).map(r => ({
-    artista: r[0], rede: r[1], handle: r[2], bio: r[3], avatar_url: r[4], 
-    telegram_id: String(r[5] || '').trim(), seguidores: parseFloat(r[6]) || 0
-  }));
-}
-
-function salvarNewsSocial(payload, tgId) {
-  try {
-    const p = JSON.parse(payload);
-    const ws = aba('SOCIAL_NEWS');
-    if (ws.getLastRow() === 0) ws.appendRow(['id', 'titulo', 'conteudo', 'imagem', 'autor', 'data', 'telegram_id']);
-    const id = 'NEWS-' + Utilities.getUuid().slice(0, 8);
-    ws.appendRow([id, p.titulo, p.conteudo, driveUrl(p.imagem), p.autor, new Date().toISOString(), tgId]);
-    return { ok: true, id };
-  } catch(e) { return { ok: false, erro: e.message }; }
-}
-
-function listarNewsSocial() {
-  try {
-    const ws = aba('SOCIAL_NEWS');
-    const data = ws.getDataRange().getValues();
-    if (data.length <= 1) return [];
-    return data.slice(1).reverse().map(r => ({ id: r[0], titulo: r[1], conteudo: r[2], imagem: r[3], autor: r[4], data: r[5], telegram_id: r[6] }));
-  } catch(e) { return []; }
-}
-
-// ── DO POST / DO GET ──
+// ── ROTEADOR PRINCIPAL ──
 
 function doPost(e) {
   try {
@@ -342,88 +197,204 @@ function processAction(p) {
   if (acao === 'mural')                return jsonOut(aba('MURAL').getDataRange().getValues().slice(1).map(r => ({ id: r[0], vendedor: r[1], titulo: r[2], teaser: r[3], preco: r[4] })));
 
   // GAMES & ECONOMY
-  if (acao === 'sync_game_coins')      return jsonOut(syncGameCoins(tgId, p.wager, p.won));
-  if (acao === 'save_pet_state')       return jsonOut(savePetState(tgId, p.payload));
-  if (acao === 'get_pet_state')        return jsonOut(getPetState(tgId));
+  if (acao === 'sync_game_coins')      return jsonOut(syncGameCoins(tgId, p.wager, p.won, p.gameContext || p.gameId, p.artistName));
+  if (acao === 'save_pet_state')       return jsonOut(handleSavePetState(tgId, p.payload));
+  if (acao === 'get_pet_state')        return jsonOut(handleGetPetState(tgId));
+
+  // QUERIDÔMETRO
+  if (acao === 'queridometro_status')  return jsonOut(getQueridometroStatus(tgId));
+  if (acao === 'queridometro_votar')   return jsonOut(handleQueridometroVotar(tgId, p.de, p.para, p.emoji));
 
   return jsonOut({ erro: 'Ação Inexistente: ' + acao });
 }
 
-// ── LÓGICA DE NEGÓCIO ──
+// ── QUERIDÔMETRO ──
 
-/**
- * Sincroniza ganhos/perdas de minigames
- */
-function syncGameCoins(tgId, wager, won) {
+function getQueridometroStatus(tgId) {
+  try {
+    if (!tgId || tgId === 'guest') return { ok: false, erro: 'Login necessário' };
+    const wsArt = aba('DB_ARTISTAS');
+    const todosArtistas = wsArt.getDataRange().getValues().slice(1).map(_mapArtistaJogador);
+    const meusArtistasLocal = todosArtistas.filter(a => a.telegram_id && a.telegram_id === String(tgId).trim());
+    
+    if (meusArtistasLocal.length === 0) return { ok: false, erro: 'Você não possui artistas vinculados' };
+
+    const sem = getSemanaAno();
+    const wsLog = aba('QUERIDOMETRO_LOG');
+    const logs = wsLog.getDataRange().getValues().slice(1);
+    const votosSemana = logs.filter(l => l[6] === sem);
+
+    const rankingMap = {};
+    todosArtistas.forEach(a => {
+      rankingMap[a.nome] = { 
+        nome: a.nome, 
+        img: a.foto, 
+        emojisRecebidos: [], 
+        totalVotos: 0 
+      };
+    });
+
+    votosSemana.forEach(v => {
+      const para = v[2];
+      const emoji = v[3];
+      if (rankingMap[para]) {
+        rankingMap[para].emojisRecebidos.push(emoji);
+        rankingMap[para].totalVotos += 1;
+      }
+    });
+
+    const ranking = Object.values(rankingMap).sort((a, b) => b.totalVotos - a.totalVotos);
+    
+    const configEmojis = [
+      { emoji: '👑', custo: 100, label: 'Coroa' },
+      { emoji: '🔥', custo: 80,  label: 'Fogo' },
+      { emoji: '💎', custo: 90,  label: 'Diamante' },
+      { emoji: '❤️', custo: 50,  label: 'Amor' },
+      { emoji: '🤢', custo: 30,  label: 'Nojo' },
+      { emoji: '🌱', custo: 20,  label: 'Planta' },
+      { emoji: '😴', custo: 10,  label: 'Sono' }
+    ];
+
+    return {
+      ok: true,
+      meusArtistas: meusArtistasLocal,
+      artistasAlvos: todosArtistas,
+      configEmojis: configEmojis,
+      ranking: ranking,
+      semana: sem
+    };
+  } catch(e) { return { ok: false, erro: e.message }; }
+}
+
+function handleQueridometroVotar(tgId, deNome, paraNome, emoji) {
+  try {
+    const sem = getSemanaAno();
+    const configEmojis = [
+      { emoji: '👑', custo: 100, pMin: 20, pMax: 40 },
+      { emoji: '🔥', custo: 80,  pMin: 15, pMax: 30 },
+      { emoji: '💎', custo: 90,  pMin: 18, pMax: 35 },
+      { emoji: '❤️', custo: 50,  pMin: 8,  pMax: 15 },
+      { emoji: '🤢', custo: 30,  pMin: -10, pMax: -2 },
+      { emoji: '🌱', custo: 20,  pMin: 1,   pMax: 5 },
+      { emoji: '😴', custo: 10,  pMin: 0,   pMax: 2 }
+    ];
+    
+    const config = configEmojis.find(e => e.emoji === emoji);
+    if (!config) return { ok: false, erro: 'Emoji inválido' };
+
+    const wsArt = aba('DB_ARTISTAS');
+    const data = wsArt.getDataRange().getValues();
+    let rowDe = -1, rowPara = -1;
+
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] === deNome) rowDe = i + 1;
+      if (data[i][0] === paraNome) rowPara = i + 1;
+    }
+
+    if (rowDe === -1 || rowPara === -1) return { ok: false, erro: 'Erro ao localizar artistas' };
+
+    const saldoDe = parseFloat(data[rowDe-1][3]) || 0;
+    if (saldoDe < config.custo) return { ok: false, erro: 'O artista ' + deNome + ' não tem saldo suficiente' };
+
+    const prestigeGain = Math.floor(Math.random() * (config.pMax - config.pMin + 1)) + config.pMin;
+    const prestigioPara = parseFloat(data[rowPara-1][8]) || 0;
+
+    wsArt.getRange(rowDe, 4).setValue(saldoDe - config.custo); 
+    wsArt.getRange(rowPara, 9).setValue(prestigioPara + prestigeGain); 
+
+    const wsLog = aba('QUERIDOMETRO_LOG');
+    if (wsLog.getLastRow() === 0) wsLog.appendRow(['DATA', 'DE', 'PARA', 'EMOJI', 'CUSTO_PAGO', 'PRESTIGIO_GERADO', 'SEMANA']);
+    wsLog.appendRow([new Date().toISOString(), deNome, paraNome, emoji, config.custo, prestigeGain, sem]);
+
+    syncGameCoins(tgId, config.custo, 0, 'Queridômetro (Enviou ' + emoji + ' para ' + paraNome + ')', deNome);
+
+    return { ok: true, msg: 'Ação enviada!' };
+  } catch(e) { return { ok: false, erro: e.message }; }
+}
+
+// ── OUTRAS FUNÇÕES ──
+
+function meusArtistas(tgId) {
+  if (!tgId || tgId === 'guest') return jsonOut([]);
+  const ws = aba('DB_ARTISTAS');
+  const data = ws.getDataRange().getValues().slice(1);
+  const cleanId = String(tgId).trim();
+  const filtered = data.filter(r => r[10] && String(r[10]).trim() === cleanId);
+  return jsonOut(filtered.map(_mapArtistaJogador));
+}
+
+function syncGameCoins(tgId, wager, won, context, artistName) {
   try {
     const ws = aba('DB_ARTISTAS');
     const data = ws.getDataRange().getValues();
-    let userRow = -1;
     const cleanId = String(tgId).trim();
+    let userRow = -1;
     
     for (let i = 1; i < data.length; i++) {
-      if (String(data[i][10]).trim() === cleanId) {
-        userRow = i + 1;
-        break;
+      const rowId = String(data[i][10]).trim();
+      const rowNome = data[i][0];
+      if (rowId === cleanId) {
+        if (!artistName || rowNome === artistName) { userRow = i + 1; break; }
       }
     }
     
-    if (userRow === -1) return { ok: false, erro: 'Jogador não encontrado' };
+    if (userRow === -1) return { ok: false, erro: 'Artista não encontrado' };
     
-    const saldoAtual = parseFloat(data[userRow-1][3]) || 0;
-    const novoSaldo = saldoAtual - parseFloat(wager || 0) + parseFloat(won || 0);
-    
+    const saldoAnterior = parseFloat(data[userRow-1][3]) || 0;
+    const vWager = parseFloat(wager || 0);
+    const vWon = parseFloat(won || 0);
+
+    if (vWager > saldoAnterior) return { ok: false, erro: 'Saldo insuficiente' };
+
+    const novoSaldo = saldoAnterior - vWager + vWon;
     ws.getRange(userRow, 4).setValue(novoSaldo);
     
-    // Log no Radar se ganho for expressivo
-    if (parseFloat(won) > parseFloat(wager) * 1.5) {
-      aba('RADAR_FEED').insertRowBefore(2).getRange(2, 1, 1, 4).setValues([[
-        new Date().toISOString(), 
-        data[userRow-1][0], 
-        'Faturou ' + Math.floor(parseFloat(won) - parseFloat(wager)) + ' EC nos Games!', 
-        data[userRow-1][1]
-      ]]);
-    }
+    const wsLog = aba('LOG_ECONOMIA');
+    if (wsLog.getLastRow() === 0) wsLog.appendRow(['DATA', 'TELEGRAM_ID', 'ARTISTA', 'TIPO', 'VALOR', 'CONTEXTO', 'SALDO_RESULTANTE']);
+
+    if (vWager > 0) wsLog.appendRow([new Date().toISOString(), cleanId, data[userRow-1][0], 'DÉBITO', vWager, context || 'Jogo', novoSaldo + vWon]);
+    if (vWon > 0) wsLog.appendRow([new Date().toISOString(), cleanId, data[userRow-1][0], 'CRÉDITO', vWon, context || 'Jogo', novoSaldo]);
     
     return { ok: true, novoSaldo: novoSaldo };
   } catch(e) { return { ok: false, erro: e.message }; }
 }
 
-function savePetState(tgId, payload) {
+function handleSavePetState(tgId, payload) {
   try {
+    if (!tgId || tgId === 'guest') return { ok: false };
     const ws = aba('PET_STATE');
     if (ws.getLastRow() === 0) ws.appendRow(['telegram_id', 'payload', 'last_update']);
     const data = ws.getDataRange().getValues();
     let rowIdx = -1;
-    const cleanId = String(tgId).trim();
     for (let i = 1; i < data.length; i++) {
-      if (String(data[i][0]).trim() === cleanId) { rowIdx = i + 1; break; }
+        if (String(data[i][0]).trim() === String(tgId).trim()) { rowIdx = i + 1; break; }
     }
-    if (rowIdx !== -1) ws.getRange(rowIdx, 2, 1, 2).setValues([[payload, new Date().getTime()]]);
-    else ws.appendRow([cleanId, payload, new Date().getTime()]);
+    const row = [tgId, payload, Date.now()];
+    if (rowIdx !== -1) ws.getRange(rowIdx, 1, 1, 3).setValues([row]);
+    else ws.appendRow(row);
     return { ok: true };
   } catch(e) { return { ok: false, erro: e.message }; }
 }
 
-function getPetState(tgId) {
+function handleGetPetState(tgId) {
   try {
+    if (!tgId || tgId === 'guest') return { ok: false };
     const ws = aba('PET_STATE');
     const data = ws.getDataRange().getValues();
-    const cleanId = String(tgId).trim();
     for (let i = 1; i < data.length; i++) {
-      if (String(data[i][0]).trim() === cleanId) return { ok: true, payload: data[i][1], lastUpdate: data[i][2] };
+        if (String(data[i][0]).trim() === String(tgId).trim()) { return { ok: true, payload: data[i][1], lastUpdate: data[i][2] }; }
     }
-    return { ok: false, erro: 'Pet não encontrado' };
+    return { ok: true, payload: null };
   } catch(e) { return { ok: false, erro: e.message }; }
 }
 
-function meusArtistas(tgId) {
-  if (!tgId) return jsonOut([]);
-  const ws = aba('DB_ARTISTAS');
-  const data = ws.getDataRange().getValues().slice(1);
-  const cleanId = String(tgId).trim();
-  const filtered = data.filter(r => String(r[10]).trim() === cleanId);
-  return jsonOut(filtered.map(_mapArtistaJogador));
+function getSemanaAno() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+  const yearStart = new Date(d.getFullYear(), 0, 1);
+  const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  return d.getFullYear() + '-W' + weekNo;
 }
 
 function handleCompraTour(p) {
@@ -432,9 +403,7 @@ function handleCompraTour(p) {
   const ws = aba('DB_ARTISTAS');
   const data = ws.getDataRange().getValues();
   let artIdx = -1;
-  for (let i = 1; i < data.length; i++) {
-    if (String(data[i][0]).toLowerCase() === p.nome.toLowerCase()) { artIdx = i + 1; break; }
-  }
+  for (let i = 1; i < data.length; i++) { if (String(data[i][0]).toLowerCase() === p.nome.toLowerCase()) { artIdx = i + 1; break; } }
   if (artIdx === -1) return { ok: false, erro: 'Artista não encontrado' };
   const saldo = parseFloat(data[artIdx-1][3]) || 0;
   if (saldo < custo) return { ok: false, erro: 'Saldo insuficiente' };
@@ -444,11 +413,10 @@ function handleCompraTour(p) {
   ws.getRange(artIdx, 14).setValue(JSON.stringify(tourInfo));
   aba('CONTROLE_TOURS').appendRow([p.nome, p.titulo, p.tipo, p.qtd, 0, p.continente || 'Mundial', 0, 'Em andamento', '[]']);
   aba('RADAR_FEED').insertRowBefore(2).getRange(2, 1, 1, 4).setValues([[new Date().toISOString(), p.nome, 'Iniciou a turnê ' + p.titulo, data[artIdx-1][1]]]);
-  return { ok: true, message: 'Turnê comprada com sucesso!' };
+  return { ok: true };
 }
 
 function getProjetosArtista(nome) {
-  if (!nome) return [];
   const projects = [];
   try {
     const data = aba('CINEMA').getDataRange().getValues().slice(1);
@@ -471,10 +439,8 @@ function handleComprarImovel(p) {
   const ws = aba('DB_ARTISTAS');
   const data = ws.getDataRange().getValues();
   let artIdx = -1;
-  for (let i = 1; i < data.length; i++) {
-    if (String(data[i][0]).toLowerCase() === p.nome.toLowerCase()) { artIdx = i + 1; break; }
-  }
-  if (artIdx === -1) return { ok: false, erro: 'Artista não encontrado' };
+  for (let i = 1; i < data.length; i++) { if (String(data[i][0]).toLowerCase() === p.nome.toLowerCase()) { artIdx = i + 1; break; } }
+  if (artIdx === -1) return { ok: false, erro: 'Não encontrado' };
   const saldo = parseFloat(data[artIdx-1][3]) || 0;
   if (saldo < custo) return { ok: false, erro: 'Saldo insuficiente' };
   ws.getRange(artIdx, 4).setValue(saldo - custo);
@@ -518,7 +484,6 @@ function buscarMusicas(q) {
 }
 
 function getTopChartsAll() {
-  const ID_CHARTS = '1ThRhljmAS41JmVBPkPtYwe0JQHRx9Pih2PQAPT2ebyA';
   const configs = [
     { id: ID_CHARTS, sheet: 'BILLBOARD HOT 100', key: 'billboard_hot_100', map: { m: 3, a: 7, f: 15, url: 'https://empirerpg-max.github.io/central/charts.html?tab=BILLBOARD%20HOT%20100' } },
     { id: ID_CHARTS, sheet: 'SPOTIFY', key: 'spotify', map: { m: 3, a: 7, f: 15, url: 'https://empirerpg-max.github.io/central/charts.html?tab=SPOTIFY' } },
@@ -536,7 +501,7 @@ function getTopChartsAll() {
       for (let i = data.length - 1; i >= 1; i--) { if (parseInt(data[i][2]) === 1) { topRow = data[i]; break; } }
       if (topRow) r[c.key] = { musica: String(topRow[c.map.m]||'').trim(), artista: String(topRow[c.map.a]||'').trim(), foto: String(topRow[c.map.f]||'').trim(), data: String(topRow[1]), url: c.url };
       else r[c.key] = { musica: "", artista: "", foto: "", data: "", url: c.url };
-    } catch(e) { r[c.key + '_error'] = e.message; }
+    } catch(e) {}
   });
   return r;
 }
@@ -545,26 +510,16 @@ function handleSalvarPlaylist(payload, tgId) {
   try {
     const p = JSON.parse(payload);
     const ws = aba('Playlists');
-    const data = ws.getDataRange().getValues();
-    if (data.length === 1 && data[0][0] === "") ws.getRange(1, 1, 1, 8).setValues([["ID", "Título", "Descrição", "Capa", "Owner", "TelegramID", "TracksJSON", "Data"]]);
     const id = p.id || ('PL-' + Utilities.getUuid().slice(0, 5));
     const tracksJson = JSON.stringify(p.tracks || []);
     let rowIdx = -1;
+    const currentData = ws.getDataRange().getValues();
     if (p.id) { 
-      const currentData = ws.getDataRange().getValues();
       for (let i = 1; i < currentData.length; i++) { if (String(currentData[i][0]) === String(p.id)) { rowIdx = i + 1; break; } } 
     }
-    let finalTgId = String(tgId || p.telegram_id || '');
-    if (!finalTgId && p.owner) {
-      const artData = aba('DB_ARTISTAS').getDataRange().getValues().slice(1);
-      const art = artData.find(r => String(r[0]).toLowerCase() === String(p.owner).toLowerCase());
-      if (art) finalTgId = String(art[10] || '');
-    }
-    const rowData = [id, p.titulo, p.descricao || "", p.capa_url || "", p.owner, finalTgId, tracksJson, p.data || new Date().toISOString()];
+    const rowData = [id, p.titulo, p.descricao || "", p.capa_url || "", p.owner, tgId || p.telegram_id || "", tracksJson, p.data || new Date().toISOString()];
     if (rowIdx !== -1) {
-      const currentData = ws.getDataRange().getValues();
-      const existingTgId = String(currentData[rowIdx-1][5]);
-      if (tgId && tgId !== "810141686" && existingTgId && existingTgId !== String(tgId)) return { ok: false, erro: 'Não autorizado' };
+      if (tgId && tgId !== "810141686" && String(currentData[rowIdx-1][5]) !== String(tgId)) return { ok: false, erro: 'Não autorizado' };
       ws.getRange(rowIdx, 1, 1, 8).setValues([rowData]);
     } else ws.appendRow(rowData);
     return { ok: true, id };
@@ -617,13 +572,7 @@ function handleLancarAlbum(payload) {
   try {
     const p = JSON.parse(payload);
     const id = p.id || ('ALB-' + Utilities.getUuid().slice(0, 5));
-    let finalTgId = String(p.telegram_id || '');
-    if (!finalTgId && p.artista) {
-      const artData = aba('DB_ARTISTAS').getDataRange().getValues().slice(1);
-      const art = artData.find(r => String(r[0]).toLowerCase() === String(p.artista).toLowerCase());
-      if (art) finalTgId = String(art[10] || '');
-    }
-    aba("Albuns").appendRow([id, p.artista, p.titulo, p.genero, p.data, p.descricao, p.capa_url, finalTgId, p.contracapa_url || '']);
+    aba("Albuns").appendRow([id, p.artista, p.titulo, p.genero, p.data, p.descricao, p.capa_url, p.telegram_id || '', p.contracapa_url || '']);
     if (p.faixas && Array.isArray(p.faixas)) {
       const wsF = aba("AlbumFaixas");
       p.faixas.forEach(f => wsF.appendRow([id, f.numero, f.titulo, f.artistas, f.duracao || '', f.drive_url, f.letra || '']));
@@ -681,12 +630,9 @@ function handleVincularImagemTour(p) {
   const ws = aba('CONTROLE_TOURS');
   const data = ws.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) {
-    if (String(data[i][0]).toLowerCase() === p.nome.toLowerCase()) {
-      ws.getRange(i + 1, 10).setValue(p.url);
-      return { ok: true };
-    }
+    if (String(data[i][0]).toLowerCase() === p.nome.toLowerCase()) { ws.getRange(i + 1, 10).setValue(p.url); return { ok: true }; }
   }
-  return { ok: false, erro: 'Não encontrada' };
+  return { ok: false };
 }
 
 function handleCompraCinema(p) {
@@ -694,7 +640,7 @@ function handleCompraCinema(p) {
   const data = ws.getDataRange().getValues();
   let artIdx = -1;
   for (let i = 1; i < data.length; i++) { if (String(data[i][0]).toLowerCase() === p.nome.toLowerCase()) { artIdx = i + 1; break; } }
-  if (artIdx === -1) return { ok: false, erro: 'Artista não encontrado' };
+  if (artIdx === -1) return { ok: false };
   const saldo = parseFloat(data[artIdx-1][3]) || 0;
   if (saldo < 2000000) return { ok: false, erro: 'Saldo insuficiente' };
   ws.getRange(artIdx, 4).setValue(saldo - 2000000);
@@ -708,7 +654,7 @@ function handlePayola(p) {
   const data = ws.getDataRange().getValues();
   let artIdx = -1;
   for (let i = 1; i < data.length; i++) { if (String(data[i][0]).toLowerCase() === p.nome.toLowerCase()) { artIdx = i + 1; break; } }
-  if (artIdx === -1) return { ok: false, erro: 'Não encontrado' };
+  if (artIdx === -1) return { ok: false };
   const saldo = parseFloat(data[artIdx-1][3]) || 0;
   if (saldo < v) return { ok: false, erro: 'Saldo insuficiente' };
   ws.getRange(artIdx, 4).setValue(saldo - v);
@@ -720,7 +666,7 @@ function handleRescisao(p) {
   const data = ws.getDataRange().getValues();
   let artIdx = -1;
   for (let i = 1; i < data.length; i++) { if (String(data[i][0]).toLowerCase() === p.nome.toLowerCase()) { artIdx = i + 1; break; } }
-  if (artIdx === -1) return { ok: false, erro: 'Não encontrado' };
+  if (artIdx === -1) return { ok: false };
   ws.getRange(artIdx, 13).setValue(p.destino || 'Independent');
   return { ok: true };
 }
@@ -730,18 +676,12 @@ function handlePublicarLeilao(p) {
   return { ok: true };
 }
 
-function handleLanceLeilao(p) {
-  return { ok: true };
-}
-
+function handleLanceLeilao(p) { return { ok: true }; }
 function handleVenderComposicao(p) {
   aba('MURAL').appendRow([Utilities.getUuid().slice(0, 5), p.nome, p.titulo, 'Composição autorada', p.preco]);
   return { ok: true };
 }
-
-function handleComprarItemMural(p) {
-  return { ok: true };
-}
+function handleComprarItemMural(p) { return { ok: true }; }
 
 function comprarMarket(p) {
   const v = parseFloat(p.preco || 0);
@@ -749,7 +689,7 @@ function comprarMarket(p) {
   const data = ws.getDataRange().getValues();
   let artIdx = -1;
   for (let i = 1; i < data.length; i++) { if (String(data[i][0]).toLowerCase() === p.nome.toLowerCase()) { artIdx = i + 1; break; } }
-  if (artIdx === -1) return { ok: false, erro: 'Não encontrado' };
+  if (artIdx === -1) return { ok: false };
   const saldo = parseFloat(data[artIdx-1][3]) || 0;
   if (saldo < v) return { ok: false, erro: 'Saldo insuficiente' };
   ws.getRange(artIdx, 4).setValue(saldo - v);
@@ -761,7 +701,7 @@ function venderBem(p) {
   const ws = aba('INVENTARIO');
   const data = ws.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) { if (String(data[i][0]) === String(p.id)) { ws.deleteRow(i + 1); return { ok: true }; } }
-  return { ok: false, erro: 'Não encontrado' };
+  return { ok: false };
 }
 
 function vincularArtista(nome, tgId) {
@@ -775,4 +715,125 @@ function vincularArtista(nome, tgId) {
     } 
   }
   return { ok: false, erro: 'Não encontrado' };
+}
+
+// ── SOCIAIS (FINAIS) ──
+
+function salvarPostSocial(payload, tgId) {
+  try {
+    const p = JSON.parse(payload);
+    const ws = aba('SOCIAL_POSTS');
+    if (ws.getLastRow() === 0) { ws.appendRow(['id', 'tipo', 'subtipo', 'autor', 'texto', 'media_url', 'analytics', 'data', 'telegram_id']); }
+    const id = 'POST-' + Utilities.getUuid().slice(0, 8);
+    ws.appendRow([id, p.tipo, p.subtipo || "", String(p.autor || "").trim(), p.texto || "", driveUrl(String(p.media_url || "").trim()), JSON.stringify(p.analytics || { likes: 0, comments: 0, shares: 0 }), new Date().toISOString(), String(tgId || p.telegram_id || "").trim()]);
+    return { ok: true, id };
+  } catch(e) { return { ok: false, erro: e.message }; }
+}
+
+function listarPostsSocial() {
+  try {
+    const ws = aba('SOCIAL_POSTS');
+    const data = ws.getDataRange().getValues();
+    if (data.length <= 1) return [];
+    const perfis = listarPerfisSocial();
+    return data.slice(1).reverse().map(r => {
+      const autor = String(r[3] || "").trim();
+      const rede = String(r[1] || "").trim();
+      const perfil = perfis.find(p => String(p.artista).trim().toLowerCase() === autor.toLowerCase() && String(p.rede).trim().toLowerCase() === rede.toLowerCase());
+      return { id: r[0], tipo: rede, subtipo: r[2], autor: autor, handle: perfil ? perfil.handle : `@${autor.replace(/\s+/g, '').toLowerCase()}`, avatar: perfil ? perfil.avatar_url : "", texto: r[4], media_url: String(r[5] || "").trim(), analytics: JSON.parse(r[6] || '{}'), data: r[7], telegram_id: String(r[8] || '').trim() };
+    });
+  } catch(e) { return []; }
+}
+
+function salvarPerfilSocial(payload, tgId) {
+  try {
+    const p = JSON.parse(payload);
+    const ws = aba('SOCIAL_PERFIS');
+    if (ws.getLastRow() === 0) ws.appendRow(['artista', 'rede', 'handle', 'bio', 'avatar_url', 'telegram_id', 'seguidores']);
+    const data = ws.getDataRange().getValues();
+    let rowIdx = -1;
+    const targetArt = String(p.artista || "").trim().toLowerCase();
+    const targetRede = String(p.rede || "").trim().toLowerCase();
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]).trim().toLowerCase() === targetArt && String(data[i][1]).trim().toLowerCase() === targetRede) { rowIdx = i + 1; break; }
+    }
+    const rowData = [String(p.artista || "").trim(), String(p.rede || "").trim(), String(p.handle || "").trim(), p.bio || "", driveUrl(String(p.avatar_url || "").trim()), String(tgId || p.telegram_id || '').trim(), p.seguidores || 0];
+    if (rowIdx !== -1) ws.getRange(rowIdx, 1, 1, 7).setValues([rowData]);
+    else ws.appendRow(rowData);
+    return { ok: true };
+  } catch(e) { return { ok: false, erro: e.message }; }
+}
+
+function curtirPostSocial(postId, tgId) {
+  try {
+    const ws = aba('SOCIAL_POSTS');
+    const data = ws.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] === postId) {
+        const analytics = JSON.parse(data[i][6] || '{}');
+        analytics.likes = (analytics.likes || 0) + 1;
+        ws.getRange(i + 1, 7).setValue(JSON.stringify(analytics));
+        return { ok: true, likes: analytics.likes };
+      }
+    }
+    return { ok: false };
+  } catch(e) { return { ok: false, erro: e.message }; }
+}
+
+function comentarPostSocial(payload, tgId) {
+  try {
+    const p = JSON.parse(payload);
+    aba('SOCIAL_COMMENTS').appendRow([p.postId, p.autor, p.texto, new Date().toISOString(), tgId]);
+    const wsPost = aba('SOCIAL_POSTS');
+    const postData = wsPost.getDataRange().getValues();
+    for (let i = 1; i < postData.length; i++) {
+      if (postData[i][0] === p.postId) {
+        const analytics = JSON.parse(postData[i][6] || '{}');
+        analytics.comments = (analytics.comments || 0) + 1;
+        wsPost.getRange(i + 1, 7).setValue(JSON.stringify(analytics));
+        break;
+      }
+    }
+    return { ok: true };
+  } catch(e) { return { ok: false, erro: e.message }; }
+}
+
+function listarComentariosSocial(postId) {
+  try {
+    const ws = aba('SOCIAL_COMMENTS');
+    const data = ws.getDataRange().getValues();
+    if (data.length <= 1) return [];
+    const perfis = listarPerfisSocial();
+    return data.slice(1).filter(r => r[0] === postId).map(r => {
+      const autor = String(r[1] || "").trim();
+      const perfil = perfis.find(p => String(p.artista).trim().toLowerCase() === autor.toLowerCase());
+      return { autor: autor, texto: r[2], data: r[3], avatar: perfil ? perfil.avatar_url : "" };
+    });
+  } catch(e) { return []; }
+}
+
+function listarPerfisSocial(tgId) {
+  const ws = aba('SOCIAL_PERFIS');
+  const data = ws.getDataRange().getValues();
+  if (data.length <= 1) return [];
+  const searchId = tgId ? String(tgId).trim() : null;
+  return data.slice(1).filter(r => !searchId || String(r[5]).trim() === searchId).map(r => ({
+    artista: r[0], rede: r[1], handle: r[2], bio: r[3], avatar_url: r[4], telegram_id: String(r[5] || '').trim(), seguidores: parseFloat(r[6]) || 0
+  }));
+}
+
+function salvarNewsSocial(payload, tgId) {
+  try {
+    const p = JSON.parse(payload);
+    const id = 'NEWS-' + Utilities.getUuid().slice(0, 8);
+    aba('SOCIAL_NEWS').appendRow([id, p.titulo, p.conteudo, driveUrl(p.imagem), p.autor, new Date().toISOString(), tgId]);
+    return { ok: true, id };
+  } catch(e) { return { ok: false, erro: e.message }; }
+}
+
+function listarNewsSocial() {
+  try {
+    const data = aba('SOCIAL_NEWS').getDataRange().getValues().slice(1);
+    return data.reverse().map(r => ({ id: r[0], titulo: r[1], conteudo: r[2], imagem: r[3], autor: r[4], data: r[5], telegram_id: r[6] }));
+  } catch(e) { return []; }
 }

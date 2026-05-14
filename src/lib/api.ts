@@ -491,13 +491,15 @@ export const api = {
   },
 
   // ---- Games & Economy ----
-  async syncGameCoins(tgId: string, wager: number, won: number): Promise<CommonResponse & { novoSaldo?: number }> {
+  async syncGameCoins(tgId: string, wager: number, won: number, gameContext?: string, artistName?: string): Promise<CommonResponse & { novoSaldo?: number }> {
     invalidateCache();
     return call<CommonResponse & { novoSaldo?: number }>({ 
       acao: "sync_game_coins", 
       telegram_id: tgId, 
       wager, 
-      won 
+      won,
+      gameContext,
+      artistName
     });
   },
   async savePetState(tgId: string, payload: string): Promise<CommonResponse> {
@@ -512,6 +514,21 @@ export const api = {
       acao: "get_pet_state", 
       telegram_id: tgId 
     });
+  },
+
+  // ---- Queridômetro ----
+  async getQueridometroStatus(tgId: string): Promise<CommonResponse & { 
+    meuPerfil?: any, 
+    artistas?: any[], 
+    votosRestantes?: number,
+    reacoesRecebidas?: any[],
+    configEmojis?: any[],
+    semana?: string
+  }> {
+    return call({ acao: "queridometro_status", tgId });
+  },
+  async postQueridometroVoto(tgId: string, de: string, para: string, emoji: string): Promise<CommonResponse & { msg?: string }> {
+    return call({ acao: "queridometro_votar", tgId, de, para, emoji });
   },
 };
 
@@ -556,10 +573,18 @@ export function fmtMoney(n: number) {
 // Usamos o thumbnail endpoint, que serve direto e aceita parâmetro de tamanho.
 export function driveImg(url: string | undefined | null, size: number = 400): string | undefined {
   if (!url) return undefined;
-  if (url.includes("lh3.googleusercontent.com")) return url;
+  
+  // Se for link do lh3 e não tiver parâmetro de redimensionamento, adiciona
+  if (url.includes("lh3.googleusercontent.com")) {
+    if (!url.includes("=")) {
+      return `${url}=w${size}-h${size}-p`;
+    }
+    return url;
+  }
+
   const m = String(url).match(/[-\w]{25,}/);
   if (!m) return url;
-  return `https://lh3.googleusercontent.com/d/${m[0]}=w${size}-h${size}`;
+  return `https://lh3.googleusercontent.com/d/${m[0]}=w${size}-h${size}-p`;
 }
 
 // Para áudio: extrai ID e retorna URL do player do Drive (iframe-able).
